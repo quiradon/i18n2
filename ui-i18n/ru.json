@@ -1,0 +1,224 @@
+{
+  "app": {
+    "brand": "Кракен i18n",
+    "createI18n": "Создать структуру i18n",
+    "mobileTitle": "Кракен i18n",
+    "sidebar": {
+      "collapse": "Свернуть боковую панель",
+      "expand": "Развернуть боковую панель"
+    },
+    "status": {
+      "emptyFolder": "В папке i18n не найдено файлов JSON.",
+      "missingFolder": "Папка не найдена: {{folder}}",
+      "missingWorkspace": "Нет открытой папки рабочего пространства."
+    }
+  },
+  "settings": {
+    "tokens": {
+      "total": "Общий",
+      "byLanguage": "По языку",
+      "byModel": "По модели",
+      "completion": "Завершение",
+      "estimate": {
+        "cost": "Оценочная стоимость:",
+        "missing": "Недостающие:",
+        "model": "Модель:",
+        "note": "Оценка основана на запросе TOON и исходном тексте.",
+        "title": "Ожидаемая смета затрат",
+        "tokens": "Токены:"
+      },
+      "never": "Никогда",
+      "noData": "Нет данных",
+      "prompt": "Текст: \n\"\"\"Запрос\"\"\"",
+      "requests": "Запросы",
+      "title": "Отчет о токенах",
+      "updated": "Последнее обновление:"
+    },
+    "about": {
+      "status": "Стабильный",
+      "title": "О нас",
+      "version": "Версия приложения"
+    },
+    "ai": {
+      "apiKey": {
+        "help": "Сохранено в настройках VS Code.",
+        "label": "Текст:\n\"\"\"Ключ API OpenAI\"\"\""
+      },
+      "model": {
+        "label": "Предпочтительная модель"
+      },
+      "title": "Настройки ИИ"
+    },
+    "languages": {
+      "active": {
+        "badge": {
+          "active": "Активный",
+          "source": "По умолчанию"
+        },
+        "help": "Языки, найденные в папке i18n.",
+        "label": "Активные языки"
+      },
+      "reference": {
+        "help": "Этот язык будет использоваться в качестве основы для переводов.",
+        "label": "Языковая справка (по умолчанию)"
+      },
+      "title": "Настройки языка"
+    },
+    "subtitle": "Настройте свой опыт i18n на Kraken",
+    "suggestions": {
+      "add": "Добавить",
+      "title": "Языковые предложения"
+    },
+    "title": "Настройки"
+  },
+  "createKey": {
+    "key": {
+      "label": "Имя ключа",
+      "help": "Используйте точечную нотацию для группировки (например: home.button.save)"
+    },
+    "cancel": "Отмена",
+    "content": {
+      "label": "По умолчанию содержимое ({{source}})"
+    },
+    "placeholder": "Введите оригинальный текст...",
+    "preview": {
+      "empty": "Предварительный просмотр появится здесь...",
+      "title": "Предварительный просмотр"
+    },
+    "submit": "Создать ключ",
+    "title": "Создать новый ключ"
+  },
+  "common": {
+    "ok": "ОК"
+  },
+  "translations": {
+    "view": {
+      "list": "Список",
+      "grid": "Сетка"
+    },
+    "title": "Переводы",
+    "subtitle": "Управление ключами и значениями",
+    "sort": {
+      "none": "Завершение: По умолчанию",
+      "desc": "Завершение: 100% - 0%",
+      "asc": "Завершение: 0% - 100%"
+    },
+    "search": {
+      "placeholder": "Поиск ключа...",
+      "mode": {
+        "key": "Ключ",
+        "content": "Содержимое",
+        "all": "Все"
+      }
+    },
+    "quickEdit": {
+      "exit": "Выход из быстрого редактирования",
+      "enter": "Быстрое редактирование"
+    },
+    "newKey": "Новый ключ",
+    "noLanguages": "Нет языков",
+    "pagination": {
+      "next": "Следующий",
+      "page": "Страница {{current}} из {{total}}",
+      "previous": "Предыдущий",
+      "showing": "Показано {{start}}-{{end}} из {{total}}"
+    },
+    "quickAdd": "Быстрое добавление"
+  },
+  "table": {
+    "actions": "Действия",
+    "copyKey": "Копировать ключ",
+    "details": "Детали",
+    "empty": "Пусто",
+    "key": "Ключ",
+    "noKeys": "Не найдено ключей.",
+    "notTranslated": "Не переведено",
+    "progress": "Переведено {{done}}/{{total}}",
+    "source": "{{source}} (Ссылка)"
+  },
+  "dashboard": {
+    "completed": "завершено",
+    "completedPercent": "Завершено (%)",
+    "languages": "Поддерживаемые языки",
+    "manageTranslations": "Управление переводами →",
+    "pendingTokens": "Ожидающие токены",
+    "pendingTokensByLanguage": "Ожидающие токены по языкам",
+    "progress": "Общий прогресс",
+    "progressByLanguage": "Прогресс по языкам",
+    "subtitle": "Обзор прогресса перевода",
+    "title": "Панель управления",
+    "tooltip": {
+      "filled": "Заполнено",
+      "pendingTokens": "Ожидающие токены",
+      "progress": "Прогресс"
+    },
+    "totalKeys": "Общее количество ключей"
+  },
+  "editor": {
+    "autoTranslate": "Авто-перевод с помощью ИИ",
+    "autoTranslating": "Перевод...",
+    "cancel": "Отмена",
+    "changeLanguage": "Изменить язык на {{language}}",
+    "characters": "{{count}} символов",
+    "error": {
+      "ai": "Ошибка перевода ИИ. Проверьте ваш API-ключ."
+    },
+    "estimation": {
+      "completion": "C: {{count}}",
+      "cost": "Стоимость: {{value}}",
+      "missing": "Недостаточно: {{count}}",
+      "noneMissing": "Нет ожидающих языков.",
+      "noSource": "Нет исходного текста для оценки.",
+      "noTable": "Нет таблицы цен",
+      "prompt": "P: {{count}}",
+      "title": "Ключевая оценка",
+      "tokens": "Токены: {{count}}"
+    },
+    "language": "Язык",
+    "okCount": "OK: {{done}}/{{total}}",
+    "original": "Оригинал ({{source}})",
+    "placeholder": "Введите перевод здесь (поддерживается Markdown)...",
+    "preview": "Предварительный просмотр",
+    "save": "Сохранить перевод",
+    "source": "Источник",
+    "status": {
+      "missing": "Отсутствует",
+      "ok": "OK"
+    },
+    "toolbar": {
+      "bold": "Жирный",
+      "italic": "Курсив",
+      "link": "Ссылка",
+      "list": "Список"
+    },
+    "translateMissing": "Перевести отсутствующие ({{count}})",
+    "translateMissingProgress": "Перевод {{done}}/{{total}}",
+    "translatingFromTo": "Перевод с {{source}} на {{target}}"
+  },
+  "errors": {
+    "addKeyFailed": "Не удалось добавить ключ.",
+    "keyExists": "Ключ уже существует.",
+    "keyRequired": "Предоставьте действительный ключ.",
+    "openAiKeyMissing": "Установите свой ключ API OpenAI в настройках.",
+    "translationFailed": "Ошибка перевода. Проверьте свой ключ API OpenAI."
+  },
+  "nav": {
+    "dashboard": "Дашборд",
+    "settings": "Настройки",
+    "translations": "Переводы"
+  },
+  "quickAdd": {
+    "content": {
+      "label": "Содержимое ({{source}})"
+    },
+    "key": {
+      "help": "Текст будет создан на языке-референсе и переведен на другие.",
+      "label": "Имя ключа"
+    },
+    "progress": "Перевод {{done}}/{{total}} языков...",
+    "submit": "Добавить и перевести",
+    "submitting": "Добавление...",
+    "targets": "Цели: {{count}} язык(ов).",
+    "title": "Быстрое добавление"
+  }
+}

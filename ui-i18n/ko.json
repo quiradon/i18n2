@@ -1,0 +1,224 @@
+{
+  "app": {
+    "brand": "크라켄 i18n",
+    "createI18n": "i18n 구조 생성",
+    "mobileTitle": "크라켄 i18n",
+    "sidebar": {
+      "collapse": "사이드바 접기",
+      "expand": "사이드바 확장"
+    },
+    "status": {
+      "emptyFolder": "i18n에서 JSON 파일을 찾을 수 없습니다.",
+      "missingFolder": "폴더를 찾을 수 없습니다: {{folder}}",
+      "missingWorkspace": "워크스페이스 폴더가 열려 있지 않습니다."
+    }
+  },
+  "settings": {
+    "tokens": {
+      "total": "총계",
+      "byLanguage": "언어별",
+      "byModel": "모델별",
+      "completion": "완료",
+      "estimate": {
+        "cost": "예상 비용:",
+        "missing": "누락됨:",
+        "model": "모델:",
+        "note": "TOON 프롬프트와 원본 텍스트를 기반으로 한 추정치입니다.",
+        "title": "대기 중인 비용 견적",
+        "tokens": "토큰:"
+      },
+      "never": "절대",
+      "noData": "데이터 없음",
+      "prompt": "프롬프트",
+      "requests": "요청",
+      "title": "토큰 보고서",
+      "updated": "마지막 업데이트:"
+    },
+    "about": {
+      "status": "안정적",
+      "title": "정보",
+      "version": "앱 버전"
+    },
+    "ai": {
+      "apiKey": {
+        "help": "VS Code 설정에 저장됨.",
+        "label": "OpenAI API 키"
+      },
+      "model": {
+        "label": "선호하는 모델"
+      },
+      "title": "AI 설정"
+    },
+    "languages": {
+      "active": {
+        "badge": {
+          "active": "활성",
+          "source": "기본"
+        },
+        "help": "i18n 폴더에서 발견된 언어.",
+        "label": "활성 언어"
+      },
+      "reference": {
+        "help": "이 언어는 번역의 기본으로 사용될 것입니다.",
+        "label": "참조 언어 (기본)"
+      },
+      "title": "언어 설정"
+    },
+    "subtitle": "Kraken i18n 경험을 사용자 정의하세요",
+    "suggestions": {
+      "add": "추가",
+      "title": "언어 제안"
+    },
+    "title": "설정"
+  },
+  "createKey": {
+    "key": {
+      "label": "키 이름",
+      "help": "점 표기법을 사용하여 그룹화합니다(예: home.button.save)."
+    },
+    "cancel": "취소",
+    "content": {
+      "label": "기본 콘텐츠 ({{source}})"
+    },
+    "placeholder": "원본 텍스트를 입력하세요...",
+    "preview": {
+      "empty": "미리보기가 여기 나타납니다...",
+      "title": "미리보기"
+    },
+    "submit": "키 생성",
+    "title": "새 키 만들기"
+  },
+  "common": {
+    "ok": "OK"
+  },
+  "translations": {
+    "view": {
+      "list": "목록",
+      "grid": "그리드"
+    },
+    "title": "번역",
+    "subtitle": "키와 값을 관리합니다",
+    "sort": {
+      "none": "완료: 기본",
+      "desc": "완료: 100% - 0%",
+      "asc": "완료: 0% - 100%"
+    },
+    "search": {
+      "placeholder": "검색 키...",
+      "mode": {
+        "key": "키",
+        "content": "내용",
+        "all": "모두"
+      }
+    },
+    "quickEdit": {
+      "exit": "빠른 편집 종료",
+      "enter": "빠른 편집"
+    },
+    "newKey": "새로운 키",
+    "noLanguages": "언어 없음",
+    "pagination": {
+      "next": "다음",
+      "page": "페이지 {{current}} / {{total}}",
+      "previous": "이전",
+      "showing": "{{start}}-{{end}} 중 {{total}} 표시"
+    },
+    "quickAdd": "빠른 추가"
+  },
+  "table": {
+    "actions": "행동",
+    "copyKey": "복사 키",
+    "details": "세부사항",
+    "empty": "빈",
+    "key": "키",
+    "noKeys": "키가 발견되지 않았습니다.",
+    "notTranslated": "번역되지 않음",
+    "progress": "번역됨 {{done}}/{{total}}",
+    "source": "{{source}} (참조)"
+  },
+  "dashboard": {
+    "completed": "완료됨",
+    "completedPercent": "완료된 비율 (%)",
+    "languages": "지원되는 언어",
+    "manageTranslations": "번역 관리 →",
+    "pendingTokens": "대기 중인 토큰",
+    "pendingTokensByLanguage": "대기 중인 언어별 토큰",
+    "progress": "전체 진행 상황",
+    "progressByLanguage": "언어별 진행 상황",
+    "subtitle": "번역 진행 상황 개요",
+    "title": "제어판",
+    "tooltip": {
+      "filled": "채워짐",
+      "pendingTokens": "대기 중인 토큰",
+      "progress": "진행 상황"
+    },
+    "totalKeys": "총 키"
+  },
+  "editor": {
+    "autoTranslate": "AI로 자동 번역하기",
+    "autoTranslating": "번역 중...",
+    "cancel": "취소",
+    "changeLanguage": "언어를 {{language}}로 변경합니다.",
+    "characters": "{{count}} 문자",
+    "error": {
+      "ai": "AI 번역 오류. API 키를 확인하세요."
+    },
+    "estimation": {
+      "completion": "C: {{count}}",
+      "cost": "비용: {{value}}",
+      "missing": "누락됨: {{count}}",
+      "noneMissing": "보류 중인 언어가 없습니다.",
+      "noSource": "추정할 소스 텍스트가 없습니다.",
+      "noTable": "가격 표가 없습니다",
+      "prompt": "P: {{count}}",
+      "title": "주요 추정",
+      "tokens": "토큰: {{count}}"
+    },
+    "language": "언어",
+    "okCount": "OK: {{done}}/{{total}}",
+    "original": "원본 ({{source}})",
+    "placeholder": "번역을 여기에 입력하세요 (Markdown 지원)...",
+    "preview": "미리보기",
+    "save": "저장 번역",
+    "source": "소스",
+    "status": {
+      "missing": "누락됨",
+      "ok": "OK"
+    },
+    "toolbar": {
+      "bold": "굵게",
+      "italic": "이탤릭",
+      "link": "링크",
+      "list": "목록"
+    },
+    "translateMissing": "번역 누락 ({{count}})",
+    "translateMissingProgress": "번역 중 {{done}}/{{total}}",
+    "translatingFromTo": "{{source}}에서 {{target}}으로 번역 중입니다."
+  },
+  "errors": {
+    "addKeyFailed": "키를 추가할 수 없습니다.",
+    "keyExists": "키가 이미 존재합니다.",
+    "keyRequired": "유효한 키를 제공하십시오.",
+    "openAiKeyMissing": "설정에서 OpenAI API 키를 설정하세요.",
+    "translationFailed": "번역에 실패했습니다. OpenAI API 키를 확인하세요."
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "settings": "설정",
+    "translations": "번역"
+  },
+  "quickAdd": {
+    "content": {
+      "label": "내용 ({{source}})"
+    },
+    "key": {
+      "help": "텍스트는 참조 언어로 작성되고 다른 언어로 번역됩니다.",
+      "label": "키 이름"
+    },
+    "progress": "{{done}}/{{total}} 언어를 번역하는 중...",
+    "submit": "추가 및 번역",
+    "submitting": "추가하는 중...",
+    "targets": "대상: {{count}} 언어.",
+    "title": "빠른 추가"
+  }
+}

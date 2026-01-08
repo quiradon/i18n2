@@ -1,0 +1,224 @@
+{
+  "app": {
+    "brand": "クラケン i18n",
+    "createI18n": "i18n構造を作成する",
+    "mobileTitle": "Kraken i18n",
+    "sidebar": {
+      "collapse": "サイドバーを折りたたむ",
+      "expand": "サイドバーを展開する"
+    },
+    "status": {
+      "emptyFolder": "i18nにJSONファイルが見つかりません。",
+      "missingFolder": "フォルダーが見つかりません: {{folder}}",
+      "missingWorkspace": "ワークスペースフォルダーが開かれていません。"
+    }
+  },
+  "settings": {
+    "tokens": {
+      "total": "合計",
+      "byLanguage": "言語によって",
+      "byModel": "モデルによって",
+      "completion": "完了",
+      "estimate": {
+        "cost": "推定コスト:",
+        "missing": "欠落:",
+        "model": "モデル:",
+        "note": "TOONプロンプトとソーステキストに基づく見積もり。",
+        "title": "保留中のコスト見積もり",
+        "tokens": "トークン:"
+      },
+      "never": "決して",
+      "noData": "データがありません",
+      "prompt": "プロンプト",
+      "requests": "リクエスト",
+      "title": "トークンレポート",
+      "updated": "最終更新:"
+    },
+    "about": {
+      "status": "安定した",
+      "title": "{{x}}",
+      "version": "アプリバージョン"
+    },
+    "ai": {
+      "apiKey": {
+        "help": "VS Codeの設定に保存されました。",
+        "label": "OpenAI APIキー"
+      },
+      "model": {
+        "label": "好ましいモデル"
+      },
+      "title": "AI設定"
+    },
+    "languages": {
+      "active": {
+        "badge": {
+          "active": "アクティブ",
+          "source": "デフォルト"
+        },
+        "help": "i18nフォルダーに見つかった言語。",
+        "label": "アクティブ言語"
+      },
+      "reference": {
+        "help": "この言語は翻訳の基盤として使用されます。",
+        "label": "参照言語（デフォルト）"
+      },
+      "title": "言語設定"
+    },
+    "subtitle": "あなたのKraken i18n体験をカスタマイズしてください",
+    "suggestions": {
+      "add": "追加",
+      "title": "言語の提案"
+    },
+    "title": "設定"
+  },
+  "createKey": {
+    "key": {
+      "label": "キー名",
+      "help": "ドット記法を用いてグループ化してください（例: home.button.save）"
+    },
+    "cancel": "キャンセル",
+    "content": {
+      "label": "デフォルトコンテンツ ({{source}})"
+    },
+    "placeholder": "元のテキストを入力してください...",
+    "preview": {
+      "empty": "プレビューはここに表示されます...",
+      "title": "プレビュー"
+    },
+    "submit": "キーを作成",
+    "title": "新しいキーを作成"
+  },
+  "common": {
+    "ok": "OK"
+  },
+  "translations": {
+    "view": {
+      "list": "リスト",
+      "grid": "グリッド"
+    },
+    "title": "翻訳",
+    "subtitle": "キーと値を管理する",
+    "sort": {
+      "none": "完了: デフォルト",
+      "desc": "完了: 100% - 0%",
+      "asc": "完了: 0% - 100%"
+    },
+    "search": {
+      "placeholder": "検索キー...",
+      "mode": {
+        "key": "キー",
+        "content": "コンテンツ",
+        "all": "すべて"
+      }
+    },
+    "quickEdit": {
+      "exit": "クイック編集を終了",
+      "enter": "クイック編集"
+    },
+    "newKey": "新しいキー",
+    "noLanguages": "言語がありません",
+    "pagination": {
+      "next": "次へ",
+      "page": "ページ {{current}} / {{total}}",
+      "previous": "前へ",
+      "showing": "{{start}}-{{end}} の {{total}} を表示中"
+    },
+    "quickAdd": "クイック追加"
+  },
+  "table": {
+    "actions": "アクション",
+    "copyKey": "コピーキー",
+    "details": "詳細",
+    "empty": "空です",
+    "key": "キー",
+    "noKeys": "キーが見つかりませんでした。",
+    "notTranslated": "翻訳されていません",
+    "progress": "翻訳済み {{done}}/{{total}}",
+    "source": "{{source}} (参照)"
+  },
+  "dashboard": {
+    "completed": "完了しました",
+    "completedPercent": "完了 (%)",
+    "languages": "サポートされている言語",
+    "manageTranslations": "翻訳を管理 →",
+    "pendingTokens": "保留中のトークン",
+    "pendingTokensByLanguage": "保留中のトークン（言語別）",
+    "progress": "全体の進捗",
+    "progressByLanguage": "言語別の進捗",
+    "subtitle": "翻訳進捗の概要",
+    "title": "コントロールパネル",
+    "tooltip": {
+      "filled": "埋められた",
+      "pendingTokens": "保留中のトークン",
+      "progress": "進捗"
+    },
+    "totalKeys": "合計キー"
+  },
+  "editor": {
+    "autoTranslate": "自動翻訳AI",
+    "autoTranslating": "翻訳中...",
+    "cancel": "キャンセル",
+    "changeLanguage": "言語を{{language}}に変更する",
+    "characters": "{{count}} 文字",
+    "error": {
+      "ai": "AI翻訳エラー。APIキーを確認してください。"
+    },
+    "estimation": {
+      "completion": "C: {{count}}",
+      "cost": "コスト: {{value}}",
+      "missing": "不足: {{count}}",
+      "noneMissing": "保留中の言語はありません。",
+      "noSource": "ソーステキストがないため、見積もりを行うことができません。",
+      "noTable": "価格表はありません",
+      "prompt": "P: {{count}}",
+      "title": "キー見積もり",
+      "tokens": "トークン: {{count}}"
+    },
+    "language": "言語",
+    "okCount": "OK: {{done}}/{{total}}",
+    "original": "オリジナル ({{source}})",
+    "placeholder": "翻訳をここに入力してください（Markdownがサポートされています）...",
+    "preview": "プレビュー",
+    "save": "翻訳を保存",
+    "source": "ソース",
+    "status": {
+      "missing": "不足しています",
+      "ok": "OK"
+    },
+    "toolbar": {
+      "bold": "太字",
+      "italic": "イタリック",
+      "link": "リンク",
+      "list": "リスト"
+    },
+    "translateMissing": "翻訳が不足しています ({{count}})",
+    "translateMissingProgress": "翻訳中 {{done}}/{{total}}",
+    "translatingFromTo": "{{source}}から{{target}}への翻訳"
+  },
+  "errors": {
+    "addKeyFailed": "キーを追加できませんでした。",
+    "keyExists": "キーはすでに存在します。",
+    "keyRequired": "有効なキーを提供してください。",
+    "openAiKeyMissing": "設定でOpenAI APIキーを入力してください。",
+    "translationFailed": "翻訳に失敗しました。OpenAI APIキーを確認してください。"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "settings": "設定",
+    "translations": "翻訳"
+  },
+  "quickAdd": {
+    "content": {
+      "label": "コンテンツ ({{source}})"
+    },
+    "key": {
+      "help": "テキストは参照言語で作成され、他の言語に翻訳されます。",
+      "label": "キー名"
+    },
+    "progress": "{{done}}/{{total}} 言語を翻訳中...",
+    "submit": "追加して翻訳",
+    "submitting": "追加中...",
+    "targets": "ターゲット: {{count}} 言語。",
+    "title": "クイック追加"
+  }
+}

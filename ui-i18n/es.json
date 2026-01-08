@@ -1,0 +1,224 @@
+{
+  "app": {
+    "brand": "Kraken i18n",
+    "createI18n": "Crear estructura i18n",
+    "mobileTitle": "Kraken i18n",
+    "sidebar": {
+      "collapse": "Colapsar la barra lateral",
+      "expand": "Expandir la barra lateral"
+    },
+    "status": {
+      "emptyFolder": "No se encontraron archivos JSON en i18n.",
+      "missingFolder": "Carpeta no encontrada: {{folder}}",
+      "missingWorkspace": "No se ha abierto ninguna carpeta de espacio de trabajo."
+    }
+  },
+  "settings": {
+    "tokens": {
+      "total": "Total",
+      "byLanguage": "Por idioma",
+      "byModel": "Por modelo",
+      "completion": "Finalización",
+      "estimate": {
+        "cost": "Costo estimado:",
+        "missing": "Faltante:",
+        "model": "Modelo:",
+        "note": "Estimación basada en el aviso TOON y el texto fuente.",
+        "title": "Estimación de costos pendiente",
+        "tokens": "Tokens:"
+      },
+      "never": "Nunca",
+      "noData": "No hay datos",
+      "prompt": "Sugerencia",
+      "requests": "Solicitudes",
+      "title": "Informe de Tokens",
+      "updated": "Última actualización:"
+    },
+    "about": {
+      "status": "Estable",
+      "title": "Acerca de",
+      "version": "Versión de la aplicación"
+    },
+    "ai": {
+      "apiKey": {
+        "help": "Guardado en la configuración de VS Code.",
+        "label": "Etiqueta de clave API de OpenAI"
+      },
+      "model": {
+        "label": "Modelo preferido"
+      },
+      "title": "Configuraciones de IA"
+    },
+    "languages": {
+      "active": {
+        "badge": {
+          "active": "Activo",
+          "source": "Texto predeterminado"
+        },
+        "help": "Idiomas encontrados en la carpeta i18n.",
+        "label": "Lenguas Activas"
+      },
+      "reference": {
+        "help": "Este idioma se utilizará como base para las traducciones.",
+        "label": "Idioma de referencia (predeterminado)"
+      },
+      "title": "Configuración de idioma"
+    },
+    "subtitle": "Personaliza tu experiencia de i18n en Kraken",
+    "suggestions": {
+      "add": "Añadir",
+      "title": "SUGERENCIAS DE IDIOMA"
+    },
+    "title": "Configuraciones"
+  },
+  "createKey": {
+    "key": {
+      "label": "Nombre de la clave",
+      "help": "Utiliza la notación por puntos para agrupar (p. ej.: home.button.save)"
+    },
+    "cancel": "Cancelar",
+    "content": {
+      "label": "Contenido predeterminado ({{source}})"
+    },
+    "placeholder": "Escribe el texto original...",
+    "preview": {
+      "empty": "La vista previa aparecerá aquí...",
+      "title": "Vista previa"
+    },
+    "submit": "Crear clave",
+    "title": "Crear Nueva Clave"
+  },
+  "common": {
+    "ok": "OK"
+  },
+  "translations": {
+    "view": {
+      "list": "Lista",
+      "grid": "Cuadrícula"
+    },
+    "title": "Traducciones",
+    "subtitle": "Gestionar claves y valores",
+    "sort": {
+      "none": "Finalización: Predeterminado",
+      "desc": "Finalización: 100% - 0%",
+      "asc": "Finalización: 0% - 100%"
+    },
+    "search": {
+      "placeholder": "Buscar clave...",
+      "mode": {
+        "key": "Clave",
+        "content": "Contenido",
+        "all": "Todo"
+      }
+    },
+    "quickEdit": {
+      "exit": "Salir de la Edición Rápida",
+      "enter": "Edición Rápida"
+    },
+    "newKey": "Nueva clave",
+    "noLanguages": "No hay idiomas",
+    "pagination": {
+      "next": "Siguiente",
+      "page": "Página {{current}} de {{total}}",
+      "previous": "Anterior",
+      "showing": "Mostrando {{start}}-{{end}} de {{total}}"
+    },
+    "quickAdd": "Añadir Rápido"
+  },
+  "table": {
+    "actions": "Acciones",
+    "copyKey": "Copia la clave",
+    "details": "Detalles",
+    "empty": "Vacío",
+    "key": "Clave",
+    "noKeys": "No se encontraron claves.",
+    "notTranslated": "No traducido",
+    "progress": "Traducido {{done}}/{{total}}",
+    "source": "{{source}} (Ref)"
+  },
+  "dashboard": {
+    "completed": "completado",
+    "completedPercent": "Completado (%)",
+    "languages": "Lenguas soportadas",
+    "manageTranslations": "Gestionar Traducciones →",
+    "pendingTokens": "Tokens Pendientes",
+    "pendingTokensByLanguage": "Tokens pendientes por idioma",
+    "progress": "Progreso General",
+    "progressByLanguage": "Progreso por Idioma",
+    "subtitle": "Resumen del progreso de la traducción",
+    "title": "Panel de Control",
+    "tooltip": {
+      "filled": "Lleno",
+      "pendingTokens": "Tokens pendientes",
+      "progress": "Progreso"
+    },
+    "totalKeys": "Total de claves"
+  },
+  "editor": {
+    "autoTranslate": "Auto-Traducir con IA",
+    "autoTranslating": "Traduciendo...",
+    "cancel": "Cancelar",
+    "changeLanguage": "Cambia el idioma a {{language}}",
+    "characters": "{{count}} caracteres",
+    "error": {
+      "ai": "Error de traducción de IA. Verifica tu clave de API."
+    },
+    "estimation": {
+      "completion": "C: {{count}}",
+      "cost": "Cost: {{value}}",
+      "missing": "Faltante: {{count}}",
+      "noneMissing": "No hay idiomas pendientes.",
+      "noSource": "No hay texto fuente para estimar.",
+      "noTable": "No hay tabla de precios",
+      "prompt": "P: {{count}}",
+      "title": "Estimación clave",
+      "tokens": "Tokens: {{count}}"
+    },
+    "language": "Lenguaje",
+    "okCount": "OK: {{hecho}}/{{total}}",
+    "original": "Original ({{source}})",
+    "placeholder": "Escribe la traducción aquí (Markdown soportado)...",
+    "preview": "Vista previa",
+    "save": "Guardar Traducción",
+    "source": "Texto: \"\"\"Fuente\"\"\"",
+    "status": {
+      "missing": "Faltante",
+      "ok": "OK"
+    },
+    "toolbar": {
+      "bold": "**Negrita**",
+      "italic": "Cursiva",
+      "link": "Enlace",
+      "list": "Lista"
+    },
+    "translateMissing": "Traducir faltante ({{count}})",
+    "translateMissingProgress": "Traduciendo {{done}}/{{total}}",
+    "translatingFromTo": "Traduciendo de {{source}} a {{target}}"
+  },
+  "errors": {
+    "addKeyFailed": "No se pudo agregar la clave.",
+    "keyExists": "La clave ya existe.",
+    "keyRequired": "Proporcione una clave válida.",
+    "openAiKeyMissing": "Configura tu clave API de OpenAI en la configuración.",
+    "translationFailed": "La traducción falló. Verifica tu clave de API de OpenAI."
+  },
+  "nav": {
+    "dashboard": "Tablero",
+    "settings": "Configuraciones",
+    "translations": "Traducciones"
+  },
+  "quickAdd": {
+    "content": {
+      "label": "Contenido ({{source}})"
+    },
+    "key": {
+      "help": "El texto se creará en el idioma de referencia y se traducirá a los demás.",
+      "label": "Nombre de la clave"
+    },
+    "progress": "Traduciendo {{done}}/{{total}} idiomas...",
+    "submit": "Añadir y Traducir",
+    "submitting": "Agregando...",
+    "targets": "Targets: {{count}} idioma(s).",
+    "title": "Añadir Rápido"
+  }
+}

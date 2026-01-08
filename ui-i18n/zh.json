@@ -1,0 +1,224 @@
+{
+  "app": {
+    "brand": "克拉肯国际化",
+    "createI18n": "创建i18n结构",
+    "mobileTitle": "克拉肯国际化",
+    "sidebar": {
+      "collapse": "折叠侧边栏",
+      "expand": "展开侧边栏"
+    },
+    "status": {
+      "emptyFolder": "i18n 中未找到 JSON 文件。",
+      "missingFolder": "文件夹未找到：{{folder}}",
+      "missingWorkspace": "未打开任何工作区文件夹。"
+    }
+  },
+  "settings": {
+    "tokens": {
+      "total": "总计",
+      "byLanguage": "通过语言",
+      "byModel": "通过模型",
+      "completion": "完成",
+      "estimate": {
+        "cost": "预计成本：",
+        "missing": "缺失：",
+        "model": "模型:",
+        "note": "根据TOON提示和源文本进行估算。",
+        "title": "待处理的成本估算",
+        "tokens": "令牌:"
+      },
+      "never": "从不",
+      "noData": "没有数据",
+      "prompt": "提示",
+      "requests": "请求",
+      "title": "Token Report",
+      "updated": "最后更新："
+    },
+    "about": {
+      "status": "稳定",
+      "title": "关于",
+      "version": "应用版本"
+    },
+    "ai": {
+      "apiKey": {
+        "help": "保存在 VS Code 设置中。",
+        "label": "OpenAI API 密钥"
+      },
+      "model": {
+        "label": "首选模型"
+      },
+      "title": "AI 设置"
+    },
+    "languages": {
+      "active": {
+        "badge": {
+          "active": "活跃",
+          "source": "默认"
+        },
+        "help": "在 i18n 文件夹中找到的语言。",
+        "label": "活动语言"
+      },
+      "reference": {
+        "help": "这门语言将作为翻译的基础。",
+        "label": "参考语言（默认）"
+      },
+      "title": "语言设置"
+    },
+    "subtitle": "自定义您的 Kraken i18n 体验",
+    "suggestions": {
+      "add": "添加",
+      "title": "语言建议"
+    },
+    "title": "设置"
+  },
+  "createKey": {
+    "key": {
+      "label": "密钥名称",
+      "help": "使用点表示法进行分组（例如：home.button.save）"
+    },
+    "cancel": "取消",
+    "content": {
+      "label": "默认内容 ({{source}})"
+    },
+    "placeholder": "输入原始文本...",
+    "preview": {
+      "empty": "预览将在这里出现...",
+      "title": "预览"
+    },
+    "submit": "创建密钥",
+    "title": "创建新密钥"
+  },
+  "common": {
+    "ok": "好的"
+  },
+  "translations": {
+    "view": {
+      "list": "列表",
+      "grid": "网格"
+    },
+    "title": "翻译",
+    "subtitle": "管理键和值",
+    "sort": {
+      "none": "完成：默认",
+      "desc": "完成度：100% - 0%",
+      "asc": "完成度: 0% - 100%"
+    },
+    "search": {
+      "placeholder": "搜索关键字...",
+      "mode": {
+        "key": "关键",
+        "content": "内容",
+        "all": "所有"
+      }
+    },
+    "quickEdit": {
+      "exit": "退出快速编辑",
+      "enter": "快速编辑"
+    },
+    "newKey": "新密钥",
+    "noLanguages": "没有语言",
+    "pagination": {
+      "next": "下一步",
+      "page": "页面 {{current}} / {{total}}",
+      "previous": "上一页",
+      "showing": "显示 {{start}}-{{end}} 共 {{total}} 项"
+    },
+    "quickAdd": "快速添加"
+  },
+  "table": {
+    "actions": "动作",
+    "copyKey": "复制密钥",
+    "details": "详细信息",
+    "empty": "空的",
+    "key": "键",
+    "noKeys": "未找到任何密钥。",
+    "notTranslated": "未翻译",
+    "progress": "翻译 {{done}}/{{total}}",
+    "source": "{{source}} (参考)"
+  },
+  "dashboard": {
+    "completed": "完成",
+    "completedPercent": "完成（%）",
+    "languages": "支持的语言",
+    "manageTranslations": "管理翻译 →",
+    "pendingTokens": "待处理的代币",
+    "pendingTokensByLanguage": "待处理的语言令牌",
+    "progress": "整体进度",
+    "progressByLanguage": "进度按语言",
+    "subtitle": "翻译进度概览",
+    "title": "控制面板",
+    "tooltip": {
+      "filled": "已填充",
+      "pendingTokens": "待处理的代币",
+      "progress": "进度"
+    },
+    "totalKeys": "总键数"
+  },
+  "editor": {
+    "autoTranslate": "自动翻译与人工智能",
+    "autoTranslating": "翻译中...",
+    "cancel": "取消",
+    "changeLanguage": "将语言更改为{{language}}",
+    "characters": "{{count}} 个字符",
+    "error": {
+      "ai": "AI翻译错误。检查您的API密钥。"
+    },
+    "estimation": {
+      "completion": "C: {{count}}",
+      "cost": "成本: {{value}}",
+      "missing": "缺失: {{count}}",
+      "noneMissing": "没有待处理的语言。",
+      "noSource": "没有可估算的源文本。",
+      "noTable": "没有定价表",
+      "prompt": "P: {{count}}",
+      "title": "关键估计",
+      "tokens": "标记: {{count}}"
+    },
+    "language": "语言",
+    "okCount": "OK: {{done}}/{{total}}",
+    "original": "原始 ({{source}})",
+    "placeholder": "在这里输入翻译（支持Markdown）...",
+    "preview": "预览",
+    "save": "保存翻译",
+    "source": "源头",
+    "status": {
+      "missing": "缺失",
+      "ok": "OK"
+    },
+    "toolbar": {
+      "bold": "**粗体**",
+      "italic": "斜体",
+      "link": "链接",
+      "list": "列表"
+    },
+    "translateMissing": "翻译缺失 ({{count}})",
+    "translateMissingProgress": "翻译 {{done}}/{{total}}",
+    "translatingFromTo": "翻译从 {{source}} 到 {{target}}"
+  },
+  "errors": {
+    "addKeyFailed": "无法添加密钥。",
+    "keyExists": "键已存在。",
+    "keyRequired": "提供一个有效的密钥。",
+    "openAiKeyMissing": "在设置中设置您的 OpenAI API 密钥。",
+    "translationFailed": "翻译失败。请检查您的 OpenAI API 密钥。"
+  },
+  "nav": {
+    "dashboard": "仪表板",
+    "settings": "设置",
+    "translations": "翻译"
+  },
+  "quickAdd": {
+    "content": {
+      "label": "内容 ({{source}})"
+    },
+    "key": {
+      "help": "文本将以参考语言创建，并翻译成其他语言。",
+      "label": "键名"
+    },
+    "progress": "翻译 {{done}}/{{total}} 种语言...",
+    "submit": "添加和翻译",
+    "submitting": "正在添加...",
+    "targets": "目标：{{count}} 种语言。",
+    "title": "快速添加"
+  }
+}

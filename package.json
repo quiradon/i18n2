@@ -1,0 +1,91 @@
+{
+  "name": "polyglot-manager",
+  "displayName": "Kraken i18n",
+  "description": "Edit JSON i18n files from a VS Code webview.",
+  "version": "2.0.0",
+  "publisher": "quira",
+  "private": true,
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:polyglotManager.open"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "polyglotManager.open",
+        "title": "Kraken i18n: Open"
+      }
+    ],
+    "configuration": {
+      "title": "Kraken i18n",
+      "type": "object",
+      "properties": {
+        "polyglotManager.i18nFolder": {
+          "type": "string",
+          "default": "i18n",
+          "description": "Workspace folder name that contains JSON translation files."
+        },
+        "polyglotManager.sourceLanguage": {
+          "type": "string",
+          "default": "en",
+          "description": "Default source language code."
+        },
+        "polyglotManager.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API key used for AI translations."
+        },
+        "polyglotManager.openaiModel": {
+          "type": "string",
+          "default": "gpt-5-nano-2025-08-07",
+          "enum": [
+            "gpt-4o-mini",
+            "gpt-4o",
+            "gpt-5-mini",
+            "gpt-4.1-mini",
+            "gpt-4.1",
+            "gpt-4.1-nano-2025-04-14",
+            "gpt-5-mini-2025-08-07",
+            "gpt-5-nano-2025-08-07"
+          ],
+          "description": "Preferred OpenAI model for AI translations."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:webview": "vite build",
+    "build:extension": "tsc -p tsconfig.extension.json",
+    "build:test": "tsc -p tsconfig.test.json",
+    "build": "npm run build:webview && npm run build:extension",
+    "test": "npm run build:extension && npm run build:test && node ./dist/test/runTest.js"
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.13",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^22.14.0",
+    "@types/vscode": "^1.85.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "@vscode/test-electron": "^2.4.0",
+    "autoprefixer": "^10.4.20",
+    "mocha": "^10.4.0",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.13",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
