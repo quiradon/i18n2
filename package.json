@@ -5,13 +5,16 @@
   "version": "2.0.0",
   "publisher": "quira",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quiradon/i18n2.git"
+  },
   "main": "./dist/extension.js",
   "files": [
     "dist/**",
     "media/**",
     "package.json",
-    "README.md",
-    "LICENSE*"
+    "README.md"
   ],
   "engines": {
     "vscode": "^1.85.0"
