@@ -1,0 +1,31 @@
+name: Build VSIX
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Package VSIX
+        run: npx --yes @vscode/vsce package --out polyglot-manager.vsix
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyglot-manager-vsix
+          path: polyglot-manager.vsix
