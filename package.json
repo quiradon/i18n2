@@ -6,6 +6,13 @@
   "publisher": "quira",
   "private": true,
   "main": "./dist/extension.js",
+  "files": [
+    "dist/**",
+    "media/**",
+    "package.json",
+    "README.md",
+    "LICENSE*"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },

@@ -9,6 +9,8 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,6 +25,16 @@ jobs:
         run: npm run build
       - name: Package VSIX
         run: npx --yes @vscode/vsce package --out polyglot-manager.vsix
+      - name: Publish release asset
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Latest
+          artifacts: polyglot-manager.vsix
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

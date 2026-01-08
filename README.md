@@ -1,5 +1,7 @@
 # Kraken i18n (VS Code Extension)
 
+[![Download VSIX](https://img.shields.io/badge/Download-VSIX-2ea44f?style=for-the-badge)](releases/latest/download/polyglot-manager.vsix)
+
 Edit JSON translation files from a `i18n` folder using a VS Code webview UI.
 
 ## Folder Structure
