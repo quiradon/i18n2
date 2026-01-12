@@ -289,6 +289,23 @@ const App: React.FC = () => {
     addKeyInternal(keyName, initialValue);
   };
 
+  const handleDeleteKey = (keyId: string) => {
+    setKeys(prev => prev.filter(key => key.id !== keyId));
+    setValues(prev => {
+      if (!prev[keyId]) return prev;
+      const next = { ...prev };
+      delete next[keyId];
+      return next;
+    });
+
+    if (editorState.keyId === keyId) {
+      setEditorState({ keyId: null, targetLang: '' });
+      setCurrentView('list');
+    }
+
+    vscodeApi?.postMessage({ type: 'deleteKey', key: keyId });
+  };
+
   const handleQuickAdd = async (
     keyName: string,
     sourceValue: string,
@@ -649,6 +666,7 @@ const App: React.FC = () => {
                   onTranslateAll={handleTranslateAll}
                   onEdit={handleEdit}
                   onAddKey={handleAddKey}
+                  onDeleteKey={handleDeleteKey}
                   onUpdateValue={handleInlineUpdate}
                   onQuickAdd={handleQuickAdd}
                 />

@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { TranslationKey, TranslationValue, Language } from '../types';
-import { Edit, Copy, Check } from 'lucide-react';
+import { Edit, Copy, Check, Trash2 } from 'lucide-react';
 import { useI18n } from '../services/i18n';
 
 interface TranslationTableProps {
@@ -14,6 +14,7 @@ interface TranslationTableProps {
   viewMode: 'single' | 'grid';
   isQuickEditMode: boolean;
   onEdit: (keyId: string, langCode: string) => void;
+  onDeleteKey: (keyId: string) => void;
   onUpdateValue: (keyId: string, langCode: string, newValue: string) => void;
 }
 
@@ -28,6 +29,7 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
   viewMode,
   isQuickEditMode,
   onEdit,
+  onDeleteKey,
   onUpdateValue
 }) => {
   const t = useI18n();
@@ -56,6 +58,12 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedKey(text);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleDelete = (keyId: string, keyLabel: string) => {
+    const confirmed = window.confirm(t('table.deleteConfirm', { key: keyLabel }));
+    if (!confirmed) return;
+    onDeleteKey(keyId);
   };
 
   const renderCellContent = (keyId: string, langCode: string, value: string) => {
@@ -101,7 +109,7 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
                 ))
               )}
 
-              <th scope="col" className="relative px-4 py-2.5 min-w-[100px]">
+              <th scope="col" className="relative px-4 py-2.5 min-w-[140px]">
                 <span className="sr-only">{t('table.actions')}</span>
               </th>
             </tr>
@@ -172,17 +180,26 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
 
                   {/* Actions Column */}
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium align-top">
-                    {!isQuickEditMode && (
+                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                      {!isQuickEditMode && (
+                        <button
+                          onClick={() => onEdit(
+                            key.id,
+                            viewMode === 'single' ? effectiveSelectedLang : (availableTargets[0]?.code || sourceLangCode)
+                          )}
+                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 flex items-center gap-1"
+                        >
+                          <Edit className="w-4 h-4" /> {t('table.details')}
+                        </button>
+                      )}
                       <button
-                        onClick={() => onEdit(
-                          key.id,
-                          viewMode === 'single' ? effectiveSelectedLang : (availableTargets[0]?.code || sourceLangCode)
-                        )}
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-end gap-1 ml-auto"
+                        onClick={() => handleDelete(key.id, key.key)}
+                        className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 flex items-center gap-1"
+                        title={t('table.delete')}
                       >
-                        <Edit className="w-4 h-4" /> {t('table.details')}
+                        <Trash2 className="w-4 h-4" /> {t('table.delete')}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               );

@@ -51,6 +51,8 @@
   "table.notTranslated": "Not translated",
   "table.empty": "Empty",
   "table.details": "Details",
+  "table.delete": "Delete",
+  "table.deleteConfirm": "Delete key \"{{key}}\"?",
   "table.noKeys": "No keys found.",
   "table.copyKey": "Copy key",
   "table.progress": "Translated {{done}}/{{total}}",

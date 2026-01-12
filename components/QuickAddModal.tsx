@@ -7,6 +7,7 @@ interface QuickAddModalProps {
   onClose: () => void;
   sourceLangName: string;
   targetCount: number;
+  defaultKeyName?: string;
   onQuickAdd: (
     keyName: string,
     sourceValue: string,
@@ -19,6 +20,7 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onClose,
   sourceLangName,
   targetCount,
+  defaultKeyName,
   onQuickAdd
 }) => {
   const t = useI18n();
@@ -27,6 +29,11 @@ const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setNewKeyName(defaultKeyName?.trim() || '');
+  }, [isOpen, defaultKeyName]);
 
   if (!isOpen) return null;
 

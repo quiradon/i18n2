@@ -51,6 +51,8 @@
   "table.notTranslated": "Não traduzido",
   "table.empty": "Vazio",
   "table.details": "Detalhes",
+  "table.delete": "Excluir",
+  "table.deleteConfirm": "Excluir a chave \"{{key}}\"?",
   "table.noKeys": "Nenhuma chave encontrada.",
   "table.copyKey": "Copiar chave",
   "table.progress": "Traduzido {{done}}/{{total}}",

@@ -8,17 +8,24 @@ interface CreateKeyModalProps {
   onClose: () => void;
   onCreate: (keyName: string, initialValue: string) => void;
   sourceLangName: string;
+  defaultKeyName?: string;
 }
 
 const CreateKeyModal: React.FC<CreateKeyModalProps> = ({
   isOpen,
   onClose,
   onCreate,
-  sourceLangName
+  sourceLangName,
+  defaultKeyName
 }) => {
   const t = useI18n();
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setNewKeyName(defaultKeyName?.trim() || '');
+  }, [isOpen, defaultKeyName]);
 
   if (!isOpen) return null;
 

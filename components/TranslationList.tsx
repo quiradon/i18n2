@@ -35,6 +35,7 @@ interface TranslationListProps {
   ) => Promise<{ ok: boolean; error?: string }>;
   onEdit: (keyId: string, langCode: string) => void;
   onAddKey: (keyName: string, initialValue: string) => void;
+  onDeleteKey: (keyId: string) => void;
   onUpdateValue: (keyId: string, langCode: string, newValue: string) => void;
   onQuickAdd: (
     keyName: string,
@@ -68,6 +69,7 @@ const TranslationList: React.FC<TranslationListProps> = ({
   onTranslateAll,
   onEdit,
   onAddKey,
+  onDeleteKey,
   onUpdateValue,
   onQuickAdd
 }) => {
@@ -302,6 +304,7 @@ const TranslationList: React.FC<TranslationListProps> = ({
         viewMode={viewMode}
         isQuickEditMode={isQuickEditMode}
         onEdit={onEdit}
+        onDeleteKey={onDeleteKey}
         onUpdateValue={onUpdateValue}
       />
 
@@ -337,6 +340,7 @@ const TranslationList: React.FC<TranslationListProps> = ({
         onClose={() => setIsModalOpen(false)}
         onCreate={onAddKey}
         sourceLangName={sourceLangName}
+        defaultKeyName={searchTerm}
       />
       <QuickAddModal
         isOpen={isQuickAddOpen}
@@ -344,6 +348,7 @@ const TranslationList: React.FC<TranslationListProps> = ({
         onQuickAdd={onQuickAdd}
         sourceLangName={sourceLangName}
         targetCount={targetCount}
+        defaultKeyName={searchTerm}
       />
       <TranslateAllModal
         isOpen={isTranslateAllOpen}

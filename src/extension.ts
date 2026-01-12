@@ -48,6 +48,7 @@ type WebviewMessage =
   | { type: 'ready' }
   | { type: 'updateValue'; key: string; lang: string; value: string }
   | { type: 'addKey'; key: string; sourceLang: string; value: string }
+  | { type: 'deleteKey'; key: string }
   | { type: 'addLanguage'; lang: string }
   | { type: 'initI18n' }
   | { type: 'refresh' }
@@ -133,6 +134,10 @@ export function activate(context: vscode.ExtensionContext) {
         }
         case 'addKey': {
           await addTranslationKey(message.key, message.sourceLang, message.value);
+          break;
+        }
+        case 'deleteKey': {
+          await deleteTranslationKey(message.key);
           break;
         }
         case 'addLanguage': {
@@ -472,6 +477,21 @@ async function addTranslationKey(key: string, sourceLang: string, value: string)
   }
 }
 
+async function deleteTranslationKey(key: string) {
+  const i18nDir = getOrCreateI18nDir();
+  if (!i18nDir) return;
+
+  const files = fs.readdirSync(i18nDir).filter(file => file.endsWith('.json'));
+  for (const file of files) {
+    const filePath = path.join(i18nDir, file);
+    const json = readJsonFile(filePath);
+    const removed = removeNestedValue(json, key);
+    if (removed) {
+      writeJsonFile(filePath, json);
+    }
+  }
+}
+
 async function addLanguageFile(langCode: string) {
   const i18nDir = getOrCreateI18nDir();
   if (!i18nDir) return;
@@ -540,6 +560,45 @@ function getNestedValue(target: Record<string, unknown>, key: string): unknown {
     current = next;
   }
   return current;
+}
+
+function removeNestedValue(target: Record<string, unknown>, key: string): boolean {
+  const parts = key.split('.');
+  if (parts.length === 0) return false;
+
+  const parents: Array<{ obj: Record<string, unknown>; key: string }> = [];
+  let current: Record<string, unknown> = target;
+
+  for (let i = 0; i < parts.length - 1; i += 1) {
+    const part = parts[i];
+    const next = current[part];
+    if (!next || typeof next !== 'object' || Array.isArray(next)) {
+      return false;
+    }
+    parents.push({ obj: current, key: part });
+    current = next as Record<string, unknown>;
+  }
+
+  const last = parts[parts.length - 1];
+  if (!(last in current)) return false;
+  delete current[last];
+
+  for (let i = parents.length - 1; i >= 0; i -= 1) {
+    const { obj, key: parentKey } = parents[i];
+    const child = obj[parentKey];
+    if (
+      child &&
+      typeof child === 'object' &&
+      !Array.isArray(child) &&
+      Object.keys(child as Record<string, unknown>).length === 0
+    ) {
+      delete obj[parentKey];
+    } else {
+      break;
+    }
+  }
+
+  return true;
 }
 
 function getLanguageInfo(code: string): LanguageInfo {
