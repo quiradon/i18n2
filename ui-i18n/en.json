@@ -145,6 +145,11 @@
   "errors.openAiKeyMissing": "Set your OpenAI API key in settings.",
   "errors.translationFailed": "Translation failed. Check your OpenAI API key.",
   "errors.addKeyFailed": "Could not add key.",
+  "deleteKey.title": "Delete Key",
+  "deleteKey.message": "Are you sure you want to delete this key?",
+  "deleteKey.warning": "This action cannot be undone. The key will be removed from all languages.",
+  "deleteKey.cancel": "Cancel",
+  "deleteKey.confirm": "Delete",
   "app": {
     "createI18n": "Create i18n structure"
   },

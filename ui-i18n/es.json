@@ -202,6 +202,13 @@
     "openAiKeyMissing": "Configura tu clave API de OpenAI en la configuración.",
     "translationFailed": "La traducción falló. Verifica tu clave de API de OpenAI."
   },
+  "deleteKey": {
+    "title": "Eliminar Clave",
+    "message": "¿Estás seguro de que quieres eliminar esta clave?",
+    "warning": "Esta acción no se puede deshacer. La clave se eliminará de todos los idiomas.",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar"
+  },
   "nav": {
     "dashboard": "Tablero",
     "settings": "Configuraciones",

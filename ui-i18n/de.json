@@ -202,6 +202,13 @@
     "openAiKeyMissing": "Setzen Sie Ihren OpenAI API-Schlüssel in den Einstellungen.",
     "translationFailed": "Übersetzung fehlgeschlagen. Überprüfen Sie Ihren OpenAI API-Schlüssel."
   },
+  "deleteKey": {
+    "title": "Schlüssel löschen",
+    "message": "Sind Sie sicher, dass Sie diesen Schlüssel löschen möchten?",
+    "warning": "Diese Aktion kann nicht rückgängig gemacht werden. Der Schlüssel wird aus allen Sprachen entfernt.",
+    "cancel": "Abbrechen",
+    "confirm": "Löschen"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "settings": "Einstellungen",

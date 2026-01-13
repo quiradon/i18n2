@@ -202,6 +202,13 @@
     "openAiKeyMissing": "設定でOpenAI APIキーを入力してください。",
     "translationFailed": "翻訳に失敗しました。OpenAI APIキーを確認してください。"
   },
+  "deleteKey": {
+    "title": "キーを削除",
+    "message": "本当にこのキーを削除しますか？",
+    "warning": "この操作は元に戻せません。キーはすべての言語から削除されます。",
+    "cancel": "キャンセル",
+    "confirm": "削除"
+  },
   "nav": {
     "dashboard": "ダッシュボード",
     "settings": "設定",

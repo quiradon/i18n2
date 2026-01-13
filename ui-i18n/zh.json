@@ -202,6 +202,13 @@
     "openAiKeyMissing": "在设置中设置您的 OpenAI API 密钥。",
     "translationFailed": "翻译失败。请检查您的 OpenAI API 密钥。"
   },
+  "deleteKey": {
+    "title": "删除键",
+    "message": "您确定要删除此键吗？",
+    "warning": "此操作无法撤销。该键将从所有语言中删除。",
+    "cancel": "取消",
+    "confirm": "删除"
+  },
   "nav": {
     "dashboard": "仪表板",
     "settings": "设置",
