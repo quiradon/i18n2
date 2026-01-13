@@ -213,6 +213,14 @@ const App: React.FC = () => {
     }, 400);
   };
 
+  const clearPendingSavesForKey = (keyId: string) => {
+    Object.keys(saveTimers.current).forEach(timerKey => {
+      if (!timerKey.startsWith(`${keyId}:`)) return;
+      window.clearTimeout(saveTimers.current[timerKey]);
+      delete saveTimers.current[timerKey];
+    });
+  };
+
   const handleSave = (
     keyId: string,
     langCode: string,
@@ -291,6 +299,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteKey = (keyId: string) => {
+    clearPendingSavesForKey(keyId);
     setKeys(prev => prev.filter(key => key.id !== keyId));
     setValues(prev => {
       if (!prev[keyId]) return prev;

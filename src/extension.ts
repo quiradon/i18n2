@@ -566,39 +566,38 @@ function removeNestedValue(target: Record<string, unknown>, key: string): boolea
   const parts = key.split('.');
   if (parts.length === 0) return false;
 
-  const parents: Array<{ obj: Record<string, unknown>; key: string }> = [];
-  let current: Record<string, unknown> = target;
+  const removeBySegments = (current: Record<string, unknown>, startIndex: number): boolean => {
+    let removed = false;
+    for (let endIndex = startIndex; endIndex < parts.length; endIndex += 1) {
+      const joinedKey = parts.slice(startIndex, endIndex + 1).join('.');
+      if (!Object.prototype.hasOwnProperty.call(current, joinedKey)) {
+        continue;
+      }
 
-  for (let i = 0; i < parts.length - 1; i += 1) {
-    const part = parts[i];
-    const next = current[part];
-    if (!next || typeof next !== 'object' || Array.isArray(next)) {
-      return false;
+      if (endIndex === parts.length - 1) {
+        delete current[joinedKey];
+        removed = true;
+        continue;
+      }
+
+      const next = current[joinedKey];
+      if (!next || typeof next !== 'object' || Array.isArray(next)) {
+        continue;
+      }
+
+      const removedChild = removeBySegments(next as Record<string, unknown>, endIndex + 1);
+      if (removedChild) {
+        removed = true;
+        if (Object.keys(next as Record<string, unknown>).length === 0) {
+          delete current[joinedKey];
+        }
+      }
     }
-    parents.push({ obj: current, key: part });
-    current = next as Record<string, unknown>;
-  }
 
-  const last = parts[parts.length - 1];
-  if (!(last in current)) return false;
-  delete current[last];
+    return removed;
+  };
 
-  for (let i = parents.length - 1; i >= 0; i -= 1) {
-    const { obj, key: parentKey } = parents[i];
-    const child = obj[parentKey];
-    if (
-      child &&
-      typeof child === 'object' &&
-      !Array.isArray(child) &&
-      Object.keys(child as Record<string, unknown>).length === 0
-    ) {
-      delete obj[parentKey];
-    } else {
-      break;
-    }
-  }
-
-  return true;
+  return removeBySegments(target, 0);
 }
 
 function getLanguageInfo(code: string): LanguageInfo {
