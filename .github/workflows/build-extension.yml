@@ -29,11 +29,9 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
-          tag: latest
-          name: Latest
+          tag: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }} (${{ github.sha }})
           artifacts: polyglot-manager.vsix
-          allowUpdates: true
-          replacesArtifacts: true
           makeLatest: true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
