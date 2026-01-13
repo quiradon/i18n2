@@ -202,6 +202,13 @@
     "openAiKeyMissing": "Configurez votre clé API OpenAI dans les paramètres.",
     "translationFailed": "La traduction a échoué. Vérifiez votre clé API OpenAI."
   },
+  "deleteKey": {
+    "title": "Supprimer la clé",
+    "message": "Êtes-vous sûr de vouloir supprimer cette clé ?",
+    "warning": "Cette action ne peut pas être annulée. La clé sera supprimée de toutes les langues.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer"
+  },
   "nav": {
     "dashboard": "Tableau de bord",
     "settings": "Paramètres",

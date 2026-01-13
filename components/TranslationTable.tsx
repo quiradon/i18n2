@@ -2,6 +2,7 @@
 import { TranslationKey, TranslationValue, Language } from '../types';
 import { Edit, Copy, Check, Trash2 } from 'lucide-react';
 import { useI18n } from '../services/i18n';
+import DeleteKeyModal from './DeleteKeyModal';
 
 interface TranslationTableProps {
   keys: TranslationKey[];
@@ -34,6 +35,8 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
 }) => {
   const t = useI18n();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState<{ id: string; label: string } | null>(null);
   const targetLangCodes = languages
     .filter(lang => lang.code !== sourceLangCode)
     .map(lang => lang.code);
@@ -61,9 +64,15 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
   };
 
   const handleDelete = (keyId: string, keyLabel: string) => {
-    const confirmed = window.confirm(t('table.deleteConfirm', { key: keyLabel }));
-    if (!confirmed) return;
-    onDeleteKey(keyId);
+    setKeyToDelete({ id: keyId, label: keyLabel });
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (keyToDelete) {
+      onDeleteKey(keyToDelete.id);
+      setKeyToDelete(null);
+    }
   };
 
   const renderCellContent = (keyId: string, langCode: string, value: string) => {
@@ -214,6 +223,15 @@ const TranslationTable: React.FC<TranslationTableProps> = ({
           </tbody>
         </table>
       </div>
+      <DeleteKeyModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setKeyToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        keyName={keyToDelete?.label || ''}
+      />
     </div>
   );
 };

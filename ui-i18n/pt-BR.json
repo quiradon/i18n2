@@ -145,6 +145,11 @@
   "errors.openAiKeyMissing": "Configure a chave da OpenAI nas configurações.",
   "errors.translationFailed": "Erro ao traduzir. Verifique sua chave da OpenAI.",
   "errors.addKeyFailed": "Não foi possível adicionar a chave.",
+  "deleteKey.title": "Excluir Chave",
+  "deleteKey.message": "Tem certeza de que deseja excluir esta chave?",
+  "deleteKey.warning": "Esta ação não pode ser desfeita. A chave será removida de todos os idiomas.",
+  "deleteKey.cancel": "Cancelar",
+  "deleteKey.confirm": "Excluir",
   "app": {
     "brand": "Kraken i18n",
     "sidebar": {
