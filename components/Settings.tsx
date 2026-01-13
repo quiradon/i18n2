@@ -4,6 +4,7 @@ import { Language, TokenUsageReport, TranslationKey, TranslationValue } from '..
 import { buildToonPrompt, estimateTokenCount } from '../services/toonPrompt';
 import { estimateOpenAiCost, formatUsd } from '../services/openAiPricing';
 import { useI18n } from '../services/i18n';
+import { APP_VERSION } from '../appVersion';
 
 interface SettingsProps {
   allLanguages: Language[];
@@ -345,7 +346,7 @@ const Settings: React.FC<SettingsProps> = ({
               </p>
             </div>
             <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-mono font-medium">
-              v2.0.0
+              v{APP_VERSION}
             </span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ViewState, EditorState, TranslationKey, TranslationValue, Language, TokenUsageReport, TokenUsageDelta, TranslateAllEstimate } from './types';
 import { MOCK_KEYS, MOCK_VALUES, LANGUAGES } from './constants';
+import { APP_VERSION } from './appVersion';
 import Dashboard from './components/Dashboard';
 import TranslationList from './components/TranslationList';
 import TranslationEditor from './components/TranslationEditor';
@@ -589,8 +590,8 @@ const App: React.FC = () => {
             </nav>
 
             <div className="p-4 border-t border-gray-100 dark:border-gray-700">
-              <div className="px-4 text-xs text-gray-400 dark:text-gray-500" title="v2.0.0">
-                {!isSidebarCollapsed && 'v2.0.0'}
+              <div className="px-4 text-xs text-gray-400 dark:text-gray-500" title={`v${APP_VERSION}`}>
+                {!isSidebarCollapsed && `v${APP_VERSION}`}
               </div>
             </div>
           </div>

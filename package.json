@@ -75,7 +75,9 @@
     "build:extension": "tsc -p tsconfig.extension.json",
     "build:test": "tsc -p tsconfig.test.json",
     "build": "npm run build:webview && npm run build:extension",
-    "test": "npm run build:extension && npm run build:test && node ./dist/test/runTest.js"
+    "test": "npm run build:extension && npm run build:test && node ./dist/test/runTest.js",
+    "prepare": "node ./scripts/install-hooks.cjs",
+    "version:autobump": "node ./scripts/update-version.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",
