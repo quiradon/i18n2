@@ -289,11 +289,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
         <div className="flex flex-col gap-4 min-h-0">
           
           {/* Source Panel */}
-          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex-shrink-0 transition-colors">
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 transition-colors max-h-[40vh] flex flex-col min-h-0 overflow-hidden">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               {t('editor.original', { source: sourceLangName })}
             </h3>
-            <div className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap font-sans">
+            <div className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap font-sans overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-0">
               {sourceText || <span className="text-gray-400 dark:text-gray-600 italic">{t('editor.original.empty')}</span>}
             </div>
           </div>
@@ -357,11 +357,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 
         {/* Right Column: Preview */}
         <div className="flex flex-col min-h-0">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm h-full overflow-hidden flex flex-col transition-colors">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm h-full overflow-hidden flex flex-col min-h-0 transition-colors">
              <h3 className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                {t('editor.preview')}
              </h3>
-             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 prose prose-sm max-w-none prose-indigo dark:prose-invert">
+             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0 prose prose-sm max-w-none prose-indigo dark:prose-invert">
                 {value ? (
                   <ReactMarkdown>{value}</ReactMarkdown>
                 ) : (
