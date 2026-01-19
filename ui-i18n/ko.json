@@ -202,6 +202,13 @@
     "openAiKeyMissing": "설정에서 OpenAI API 키를 설정하세요.",
     "translationFailed": "번역에 실패했습니다. OpenAI API 키를 확인하세요."
   },
+  "deleteKey": {
+    "title": "키 삭제",
+    "message": "이 키를 삭제하시겠습니까?",
+    "warning": "이 작업은 취소할 수 없습니다. 키는 모든 언어에서 제거됩니다.",
+    "cancel": "취소",
+    "confirm": "삭제"
+  },
   "nav": {
     "dashboard": "대시보드",
     "settings": "설정",
