@@ -144,6 +144,7 @@ const App: React.FC = () => {
   const [tokenReport, setTokenReport] = useState<TokenUsageReport>(EMPTY_TOKEN_REPORT);
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
   const [mcpPort, setMcpPort] = useState<number>(0);
+  const [mcpPreferredPort, setMcpPreferredPort] = useState<number>(0);
   const [unusedKeys, setUnusedKeys] = useState<string[] | null>(null);
   const [scanningUnusedKeys, setScanningUnusedKeys] = useState(false);
 
@@ -473,6 +474,8 @@ const App: React.FC = () => {
           tokenReport?: TokenUsageReport;
           locale?: string;
           i18nFolder?: string;
+          mcpPort?: number;
+          mcpPreferredPort?: number;
           status?: string;
           error?: string;
         };
@@ -493,6 +496,9 @@ const App: React.FC = () => {
         setStatusCode(payload.status || null);
         if (typeof payload.mcpPort === 'number' && payload.mcpPort > 0) {
           setMcpPort(payload.mcpPort);
+        }
+        if (typeof payload.mcpPreferredPort === 'number') {
+          setMcpPreferredPort(payload.mcpPreferredPort);
         }
       }
 
@@ -536,6 +542,11 @@ const App: React.FC = () => {
   const handleOpenAiModelChange = (value: string) => {
     setOpenAiModel(value);
     vscodeApi?.postMessage({ type: 'updateConfig', key: 'openaiModel', value, scope: 'workspace' });
+  };
+
+  const handleMcpPreferredPortChange = (port: number) => {
+    setMcpPreferredPort(port);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'mcpPort', value: String(port), scope: 'global' });
   };
 
   const handleRecordTokenUsage = (usage: TokenUsageDelta) => {
@@ -748,9 +759,11 @@ const App: React.FC = () => {
                   openAiApiKey={openAiApiKey}
                   openAiModel={openAiModel}
                   tokenReport={tokenReport}
+                  mcpPreferredPort={mcpPreferredPort}
                   onSetSourceLanguage={handleSetSourceLanguage}
                   onUpdateOpenAiApiKey={handleOpenAiApiKeyChange}
                   onUpdateOpenAiModel={handleOpenAiModelChange}
+                  onUpdateMcpPreferredPort={handleMcpPreferredPortChange}
                   onAddLanguage={handleAddLanguage}
                 />
               )}

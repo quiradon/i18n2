@@ -48,6 +48,7 @@ type InitPayload = {
   i18nDirPath: string;
   extensionPath: string;
   mcpPort: number;
+  mcpPreferredPort: number;
   status: 'ok' | 'missingWorkspace' | 'missingFolder' | 'emptyFolder';
   error?: string;
 };
@@ -73,7 +74,7 @@ type WebviewMessage =
     }
   | {
       type: 'updateConfig';
-      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel';
+      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'mcpPort';
       value: string;
       scope?: 'global' | 'workspace';
     };
@@ -128,6 +129,10 @@ export function activate(context: vscode.ExtensionContext) {
     });
     const configListener = vscode.workspace.onDidChangeConfiguration(async event => {
       if (!event.affectsConfiguration('polyglotManager')) return;
+      if (event.affectsConfiguration('polyglotManager.mcpPort')) {
+        mcpHttpServer?.close();
+        mcpHttpServer = startMcpHttpServer();
+      }
       const payload = await readI18nData();
       panel.webview.postMessage({ type: 'init', payload });
     });
@@ -185,7 +190,9 @@ export function activate(context: vscode.ExtensionContext) {
             message.scope === 'workspace'
               ? vscode.ConfigurationTarget.Workspace
               : vscode.ConfigurationTarget.Global;
-          await config.update(message.key, message.value, target);
+          const configValue: string | number =
+            message.key === 'mcpPort' ? parseInt(message.value, 10) || 0 : message.value;
+          await config.update(message.key, configValue, target);
           break;
         }
         default:
@@ -225,6 +232,11 @@ function getOpenAiApiKey(): string {
 function getOpenAiModel(): string {
   const config = vscode.workspace.getConfiguration('polyglotManager');
   return config.get<string>('openaiModel', 'gpt-5-nano-2025-08-07');
+}
+
+function getMcpPreferredPort(): number {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<number>('mcpPort', 0);
 }
 
 function getDefaultTokenReport(): TokenUsageReport {
@@ -358,6 +370,7 @@ async function readI18nData(): Promise<InitPayload> {
   const sourcePreference = getSourceLanguagePreference();
   const openaiApiKey = getOpenAiApiKey();
   const openaiModel = getOpenAiModel();
+  const mcpPreferredPort = getMcpPreferredPort();
   const tokenReport = getTokenReport();
   const locale = vscode.env.language;
   const extensionPath = extensionContext?.extensionUri.fsPath ?? '';
@@ -376,6 +389,7 @@ async function readI18nData(): Promise<InitPayload> {
       i18nDirPath: '',
       extensionPath,
       mcpPort,
+      mcpPreferredPort,
       status: 'missingWorkspace',
       error: 'Nenhuma pasta de trabalho aberta.'
     };
@@ -395,6 +409,7 @@ async function readI18nData(): Promise<InitPayload> {
       i18nDirPath: '',
       extensionPath,
       mcpPort,
+      mcpPreferredPort,
       status: 'missingFolder',
       error: `Pasta nao encontrada: ${i18nFolder}`
     };
@@ -415,6 +430,7 @@ async function readI18nData(): Promise<InitPayload> {
       i18nDirPath: i18nDir,
       extensionPath,
       mcpPort,
+      mcpPreferredPort,
       status: 'emptyFolder',
       error: 'Nenhum arquivo JSON encontrado em i18n.'
     };
@@ -469,6 +485,7 @@ async function readI18nData(): Promise<InitPayload> {
     i18nDirPath: i18nDir,
     extensionPath,
     mcpPort,
+    mcpPreferredPort,
     status: 'ok'
   };
 }
@@ -994,7 +1011,7 @@ function startMcpHttpServer(): http.Server {
     });
   });
 
-  server.listen(0, '127.0.0.1', () => {
+  server.listen(getMcpPreferredPort(), '127.0.0.1', () => {
     const addr = server.address() as net.AddressInfo;
     mcpPort = addr.port;
     if (activePanel) {

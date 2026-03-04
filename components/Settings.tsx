@@ -1,5 +1,5 @@
 ﻿import React, { useMemo } from 'react';
-import { Info, Globe } from 'lucide-react';
+import { Info, Globe, Bot } from 'lucide-react';
 import { Language, TokenUsageReport, TranslationKey, TranslationValue } from '../types';
 import { buildToonPrompt, estimateTokenCount } from '../services/toonPrompt';
 import { estimateOpenAiCost, formatUsd } from '../services/openAiPricing';
@@ -14,9 +14,11 @@ interface SettingsProps {
   openAiApiKey: string;
   openAiModel: string;
   tokenReport: TokenUsageReport;
+  mcpPreferredPort: number;
   onSetSourceLanguage: (code: string) => void;
   onUpdateOpenAiApiKey: (value: string) => void;
   onUpdateOpenAiModel: (value: string) => void;
+  onUpdateMcpPreferredPort: (port: number) => void;
   onAddLanguage: (code: string, name?: string) => void;
 }
 
@@ -29,8 +31,10 @@ const Settings: React.FC<SettingsProps> = ({
   openAiApiKey,
   openAiModel,
   tokenReport,
+  mcpPreferredPort,
   onUpdateOpenAiApiKey,
   onUpdateOpenAiModel,
+  onUpdateMcpPreferredPort,
   onAddLanguage
 }) => {
   const t = useI18n();
@@ -226,6 +230,36 @@ const Settings: React.FC<SettingsProps> = ({
                 <option value="gpt-4.1">gpt-4.1</option>
               </select>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            {t('settings.mcp.title')}
+          </h3>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('settings.mcp.port.label')}
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={65535}
+              value={mcpPreferredPort}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                onUpdateMcpPreferredPort(isNaN(val) ? 0 : Math.max(0, Math.min(65535, val)));
+              }}
+              className="w-full max-w-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {t('settings.mcp.port.help')}
+            </p>
           </div>
         </div>
       </div>
