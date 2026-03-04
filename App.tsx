@@ -6,12 +6,13 @@ import Dashboard from './components/Dashboard';
 import TranslationList from './components/TranslationList';
 import TranslationEditor from './components/TranslationEditor';
 import Settings from './components/Settings';
+import McpTab from './components/McpTab';
 import { translateText } from './services/geminiService';
 import { I18nProvider, createTranslator } from './services/i18n';
 import { buildToonPrompt, estimateTokenCount } from './services/toonPrompt';
 import { estimateOpenAiCost } from './services/openAiPricing';
 import { runWithConcurrency, TRANSLATION_CONCURRENCY } from './services/concurrency';
-import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight, Bot } from 'lucide-react';
 
 const getVsCodeApi = () => {
   if (typeof window === 'undefined') return null;
@@ -141,6 +142,7 @@ const App: React.FC = () => {
   const [openAiModel, setOpenAiModel] = useState<string>('gpt-5-nano-2025-08-07');
   const [tokenReport, setTokenReport] = useState<TokenUsageReport>(EMPTY_TOKEN_REPORT);
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
+  const [mcpPort, setMcpPort] = useState<number>(0);
 
   // Computed
   const activeLanguages = languages.filter(l => activeLangCodes.includes(l.code));
@@ -486,6 +488,9 @@ const App: React.FC = () => {
         setI18nFolderName(payload.i18nFolder || 'i18n');
         setStatusMessage(payload.error || null);
         setStatusCode(payload.status || null);
+        if (typeof payload.mcpPort === 'number' && payload.mcpPort > 0) {
+          setMcpPort(payload.mcpPort);
+        }
       }
 
       if (message.type === 'theme') {
@@ -494,6 +499,10 @@ const App: React.FC = () => {
 
       if (message.type === 'tokenReport' && message.payload) {
         setTokenReport(message.payload as TokenUsageReport);
+      }
+
+      if (message.type === 'mcpPort' && typeof message.port === 'number') {
+        setMcpPort(message.port);
       }
     };
 
@@ -593,6 +602,7 @@ const App: React.FC = () => {
               <NavItem view="dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
               <NavItem view="list" icon={Globe} label={t('nav.translations')} />
               <NavItem view="settings" icon={SettingsIcon} label={t('nav.settings')} />
+              <NavItem view="mcp" icon={Bot} label={t('nav.mcp')} />
             </nav>
 
             <div className="p-4 border-t border-gray-100 dark:border-gray-700">
@@ -708,6 +718,13 @@ const App: React.FC = () => {
                   onUpdateOpenAiApiKey={handleOpenAiApiKeyChange}
                   onUpdateOpenAiModel={handleOpenAiModelChange}
                   onAddLanguage={handleAddLanguage}
+                />
+              )}
+
+              {currentView === 'mcp' && (
+                <McpTab
+                  mcpPort={mcpPort}
+                  sourceLangCode={sourceLangCode}
                 />
               )}
 
