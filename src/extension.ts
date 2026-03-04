@@ -60,6 +60,7 @@ type WebviewMessage =
   | { type: 'addLanguage'; lang: string }
   | { type: 'initI18n' }
   | { type: 'refresh' }
+  | { type: 'scanUnusedKeys' }
   | {
       type: 'recordTokenUsage';
       usage: {
@@ -166,6 +167,11 @@ export function activate(context: vscode.ExtensionContext) {
           await addLanguageFile(message.lang);
           const payload = await readI18nData();
           panel.webview.postMessage({ type: 'init', payload });
+          break;
+        }
+        case 'scanUnusedKeys': {
+          const unusedKeys = findUnusedKeys();
+          panel.webview.postMessage({ type: 'unusedKeys', keys: unusedKeys });
           break;
         }
         case 'recordTokenUsage': {
@@ -895,6 +901,34 @@ const MCP_TOOLS = [
       },
       required: []
     }
+  },
+  {
+    name: 'unused_keys',
+    description:
+      'Scan the project source files to find i18n translation keys that are not referenced ' +
+      'anywhere in the codebase. Helps keep translation files clean by identifying dead keys ' +
+      'that can be safely removed. ' +
+      'Searches for each key as a string literal inside source files (ts, tsx, js, jsx, vue, ' +
+      'svelte, php, py) under the workspace root, excluding node_modules, dist and .git.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scan_dir: {
+          type: 'string',
+          description:
+            'Absolute path of the directory to scan for key usages. ' +
+            'Defaults to the workspace root.'
+        },
+        extensions: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'List of file extensions to include in the scan (without the leading dot). ' +
+            'Defaults to ["ts","tsx","js","jsx","mjs","cjs","vue","svelte","php","py"].'
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -1185,6 +1219,34 @@ async function handleMcpRpc(
         };
       }
 
+      if (toolName === 'unused_keys') {
+        const scanDirArg = typeof args.scan_dir === 'string' ? args.scan_dir.trim() : undefined;
+        const extensionsArg = Array.isArray(args.extensions)
+          ? (args.extensions as unknown[]).filter(e => typeof e === 'string').map(e => String(e))
+          : undefined;
+        const unusedResult = mcpUnusedKeys(scanDirArg, extensionsArg);
+        if (unusedResult.error) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: `Error: ${unusedResult.error}` }],
+              isError: true
+            }
+          };
+        }
+        const text =
+          unusedResult.keys.length === 0
+            ? 'No unused translation keys found.'
+            : `Found ${unusedResult.keys.length} unused key(s):\n` +
+              unusedResult.keys.map(k => `  ${k}`).join('\n');
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { content: [{ type: 'text', text: text }] }
+        };
+      }
+
       return {
         jsonrpc: '2.0',
         id,
@@ -1290,6 +1352,13 @@ async function mcpQuickAdd(
       error: `Translation failed for some languages – ${errors.join('; ')}`
     };
   }
+
+  // Refresh the webview so changes from MCP are reflected immediately
+  if (activePanel) {
+    const payload = await readI18nData();
+    activePanel.webview.postMessage({ type: 'init', payload });
+  }
+
   return { ok: true, results };
 }
 
@@ -1567,4 +1636,125 @@ function mcpFindDuplicates(
 
   const duplicateGroups = groups.filter(g => g.keys.length > 1);
   return { lang: effectiveLang, groups: duplicateGroups };
+}
+
+// ---------------------------------------------------------------------------
+// Unused-key detection
+// ---------------------------------------------------------------------------
+
+/** Default file extensions scanned when looking for key usages. */
+const DEFAULT_SCAN_EXTENSIONS = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'svelte', 'php', 'py'];
+
+/** Directory names that are always excluded from source-file scanning. */
+const SCAN_EXCLUDE_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.next', 'out', 'coverage']);
+
+/**
+ * Recursively collect all source files under `dir` whose extension is in
+ * `extSet`, skipping directories listed in SCAN_EXCLUDE_DIRS.
+ */
+function collectSourceFiles(dir: string, extSet: Set<string>): string[] {
+  const results: string[] = [];
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (!SCAN_EXCLUDE_DIRS.has(entry.name)) {
+        results.push(...collectSourceFiles(path.join(dir, entry.name), extSet));
+      }
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name).replace(/^\./, '');
+      if (extSet.has(ext)) {
+        results.push(path.join(dir, entry.name));
+      }
+    }
+  }
+  return results;
+}
+
+/**
+ * Find all i18n keys that are not referenced in any source file.
+ *
+ * Used both by the MCP tool and the webview `scanUnusedKeys` handler.
+ *
+ * @param scanDir   Directory to scan (defaults to workspace root).
+ * @param extensions  File extensions to scan (defaults to DEFAULT_SCAN_EXTENSIONS).
+ */
+function findUnusedKeys(scanDir?: string, extensions?: string[]): string[] {
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return [];
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  if (files.length === 0) {
+    return [];
+  }
+
+  // Gather all translation keys
+  const allKeys = new Set<string>();
+  for (const file of files) {
+    const json = readJsonFile(path.join(i18nDir, file));
+    Object.keys(flattenObject(json)).forEach(k => allKeys.add(k));
+  }
+  if (allKeys.size === 0) {
+    return [];
+  }
+
+  // Determine root to scan
+  const root = scanDir ?? getWorkspaceRoot();
+  if (!root || !fs.existsSync(root)) {
+    return [];
+  }
+
+  const extSet = new Set(extensions && extensions.length > 0 ? extensions : DEFAULT_SCAN_EXTENSIONS);
+  const sourceFiles = collectSourceFiles(root, extSet);
+
+  // For each key, scan source files one at a time looking for the key surrounded
+  // by quote characters (`'key'`, `"key"`, `` `key` ``).  Processing files
+  // individually keeps peak memory proportional to the largest single file rather
+  // than the entire codebase, and we stop scanning as soon as a key is found.
+  const unusedKeys = new Set(allKeys);
+
+  for (const filePath of sourceFiles) {
+    if (unusedKeys.size === 0) break;
+    let content: string;
+    try {
+      content = fs.readFileSync(filePath, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const key of Array.from(unusedKeys)) {
+      // Match the key wrapped in single quotes, double quotes, or backticks so
+      // that e.g. the key "user" does not falsely match the word "username".
+      if (
+        content.includes(`'${key}'`) ||
+        content.includes(`"${key}"`) ||
+        content.includes(`\`${key}\``)
+      ) {
+        unusedKeys.delete(key);
+      }
+    }
+  }
+
+  return Array.from(unusedKeys).sort((a, b) => a.localeCompare(b));
+}
+
+function mcpUnusedKeys(
+  scanDir?: string,
+  extensions?: string[]
+): { keys: string[]; error?: string } {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) {
+    return { keys: [], error: 'No workspace folder open.' };
+  }
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return { keys: [], error: 'i18n directory not found.' };
+  }
+  const keys = findUnusedKeys(scanDir, extensions);
+  return { keys };
 }

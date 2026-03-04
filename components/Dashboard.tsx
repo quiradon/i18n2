@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { TranslationKey, TranslationValue, Language } from '../types';
 import { useI18n } from '../services/i18n';
@@ -9,9 +9,12 @@ interface DashboardProps {
   languages: Language[];
   sourceLangCode: string;
   onNavigateToList: () => void;
+  unusedKeys: string[] | null;
+  scanningUnusedKeys: boolean;
+  onScanUnusedKeys: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ keys, values, languages, sourceLangCode, onNavigateToList }) => {
+const Dashboard: React.FC<DashboardProps> = ({ keys, values, languages, sourceLangCode, onNavigateToList, unusedKeys, scanningUnusedKeys, onScanUnusedKeys }) => {
   const t = useI18n();
   const totalKeys = keys.length;
   const estimateTokens = (text: string) => {
@@ -141,6 +144,38 @@ const Dashboard: React.FC<DashboardProps> = ({ keys, values, languages, sourceLa
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Unused Keys */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('dashboard.unusedKeys')}</h3>
+          <button
+            onClick={onScanUnusedKeys}
+            disabled={scanningUnusedKeys}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white transition-colors"
+          >
+            {scanningUnusedKeys ? t('dashboard.unusedKeys.scanning') : t('dashboard.unusedKeys.scan')}
+          </button>
+        </div>
+        {unusedKeys === null ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.unusedKeys.prompt')}</p>
+        ) : unusedKeys.length === 0 ? (
+          <p className="text-sm text-emerald-600 dark:text-emerald-400">{t('dashboard.unusedKeys.none')}</p>
+        ) : (
+          <>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
+              {t('dashboard.unusedKeys.found', { count: String(unusedKeys.length) })}
+            </p>
+            <ul className="space-y-1 max-h-48 overflow-y-auto">
+              {unusedKeys.map(key => (
+                <li key={key} className="font-mono text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-gray-50 dark:bg-gray-900">
+                  {key}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
 
       <div className="flex justify-end">
