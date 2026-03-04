@@ -224,5 +224,13 @@
     }
   },
   "settings.ai.fixInputText.label": "Fix Input Text",
-  "settings.ai.fixInputText.help": "When enabled, the source text in Quick Add is automatically proofread (spelling, accents, grammar) by AI before being saved and translated."
+  "settings.ai.fixInputText.help": "When enabled, the source text in Quick Add is automatically proofread (spelling, accents, grammar) by AI before being saved and translated.",
+  "settings.ai.provider.label": "AI Provider",
+  "settings.ai.groq.apiKey.label": "Groq API Key",
+  "settings.ai.groq.apiKey.help": "Get your API key at console.groq.com. Saved in VS Code settings.",
+  "settings.ai.models.refresh": "Refresh models",
+  "settings.ai.models.errorNoKey": "Enter an API key first to load available models.",
+  "settings.ai.models.errorFetch": "Failed to load models. Check your API key and try again.",
+  "settings.ai.deepseek.apiKey.label": "DeepSeek API Key",
+  "settings.ai.deepseek.apiKey.help": "Get your API key at platform.deepseek.com. Saved in VS Code settings."
 }

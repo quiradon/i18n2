@@ -42,6 +42,11 @@ type InitPayload = {
   sourceLangCode: string;
   openaiApiKey: string;
   openaiModel: string;
+  aiProvider: string;
+  groqApiKey: string;
+  groqModel: string;
+  deepseekApiKey: string;
+  deepseekModel: string;
   tokenReport: TokenUsageReport;
   locale: string;
   i18nFolder: string;
@@ -75,7 +80,7 @@ type WebviewMessage =
     }
   | {
       type: 'updateConfig';
-      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'mcpPort' | 'fixInputText';
+      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'aiProvider' | 'groqApiKey' | 'groqModel' | 'deepseekApiKey' | 'deepseekModel' | 'mcpPort' | 'fixInputText';
       value: string;
       scope?: 'global' | 'workspace';
     };
@@ -241,6 +246,31 @@ function getOpenAiModel(): string {
   return config.get<string>('openaiModel', 'gpt-5-nano-2025-08-07');
 }
 
+function getAiProvider(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('aiProvider', 'openai');
+}
+
+function getGroqApiKey(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('groqApiKey', '');
+}
+
+function getGroqModel(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('groqModel', 'llama-3.3-70b-versatile');
+}
+
+function getDeepseekApiKey(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('deepseekApiKey', '');
+}
+
+function getDeepseekModel(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('deepseekModel', 'deepseek-chat');
+}
+
 function getMcpPreferredPort(): number {
   const config = vscode.workspace.getConfiguration('polyglotManager');
   return config.get<number>('mcpPort', 0);
@@ -382,6 +412,11 @@ async function readI18nData(): Promise<InitPayload> {
   const sourcePreference = getSourceLanguagePreference();
   const openaiApiKey = getOpenAiApiKey();
   const openaiModel = getOpenAiModel();
+  const aiProvider = getAiProvider();
+  const groqApiKey = getGroqApiKey();
+  const groqModel = getGroqModel();
+  const deepseekApiKey = getDeepseekApiKey();
+  const deepseekModel = getDeepseekModel();
   const mcpPreferredPort = getMcpPreferredPort();
   const fixInputText = getFixInputText();
   const tokenReport = getTokenReport();
@@ -396,6 +431,11 @@ async function readI18nData(): Promise<InitPayload> {
       sourceLangCode: sourcePreference,
       openaiApiKey,
       openaiModel,
+      aiProvider,
+      groqApiKey,
+      groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -417,6 +457,11 @@ async function readI18nData(): Promise<InitPayload> {
       sourceLangCode: sourcePreference,
       openaiApiKey,
       openaiModel,
+      aiProvider,
+      groqApiKey,
+      groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -439,6 +484,11 @@ async function readI18nData(): Promise<InitPayload> {
       sourceLangCode: sourcePreference,
       openaiApiKey,
       openaiModel,
+      aiProvider,
+      groqApiKey,
+      groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -495,6 +545,11 @@ async function readI18nData(): Promise<InitPayload> {
     sourceLangCode,
     openaiApiKey,
     openaiModel,
+    aiProvider,
+    groqApiKey,
+    groqModel,
+    deepseekApiKey,
+    deepseekModel,
     tokenReport,
     locale,
     i18nFolder,

@@ -42,6 +42,8 @@ export interface TranslateAllEstimate {
 
 export type ViewState = 'dashboard' | 'list' | 'editor' | 'settings' | 'mcp' | 'occurrences';
 
+export type AiProvider = 'openai' | 'groq' | 'deepseek';
+
 export interface EditorState {
   keyId: string | null;
   targetLang: string;

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ViewState, EditorState, TranslationKey, TranslationValue, Language, TokenUsageReport, TokenUsageDelta, TranslateAllEstimate } from './types';
+import type { AiProvider } from './types';
 import { MOCK_KEYS, MOCK_VALUES, LANGUAGES } from './constants';
 import { APP_VERSION } from './appVersion';
 import Dashboard from './components/Dashboard';
@@ -141,6 +142,11 @@ const App: React.FC = () => {
   const [sourceLangCode, setSourceLangCode] = useState<string>('en');
   const [openAiApiKey, setOpenAiApiKey] = useState<string>('');
   const [openAiModel, setOpenAiModel] = useState<string>('gpt-5-nano-2025-08-07');
+  const [aiProvider, setAiProvider] = useState<AiProvider>('openai');
+  const [groqApiKey, setGroqApiKey] = useState<string>('');
+  const [groqModel, setGroqModel] = useState<string>('llama-3.3-70b-versatile');
+  const [deepseekApiKey, setDeepseekApiKey] = useState<string>('');
+  const [deepseekModel, setDeepseekModel] = useState<string>('deepseek-chat');
   const [tokenReport, setTokenReport] = useState<TokenUsageReport>(EMPTY_TOKEN_REPORT);
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
   const [mcpPort, setMcpPort] = useState<number>(0);
@@ -151,6 +157,7 @@ const App: React.FC = () => {
 
   // Computed
   const activeLanguages = languages.filter(l => activeLangCodes.includes(l.code));
+  const activeModel = aiProvider === 'groq' ? groqModel : aiProvider === 'deepseek' ? deepseekModel : openAiModel;
   const translateAllEstimate = useMemo<TranslateAllEstimate>(() => {
     const jobs = collectTranslateAllJobs(keys, values, activeLanguages, sourceLangCode);
     if (jobs.length === 0) {
@@ -159,7 +166,7 @@ const App: React.FC = () => {
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
-        cost: estimateOpenAiCost(0, 0, openAiModel)
+        cost: estimateOpenAiCost(0, 0, activeModel)
       };
     }
 
@@ -185,9 +192,9 @@ const App: React.FC = () => {
       promptTokens,
       completionTokens,
       totalTokens,
-      cost: estimateOpenAiCost(promptTokens, completionTokens, openAiModel)
+      cost: estimateOpenAiCost(promptTokens, completionTokens, activeModel)
     };
-  }, [keys, values, activeLanguages, sourceLangCode, openAiModel]);
+  }, [keys, values, activeLanguages, sourceLangCode, activeModel]);
   
   // Navigation State
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
@@ -323,6 +330,22 @@ const App: React.FC = () => {
     vscodeApi?.postMessage({ type: 'deleteKey', key: keyId });
   };
 
+  const getActiveAiOptions = () => {
+    if (aiProvider === 'groq') {
+      return { provider: 'groq' as const, groqApiKey, groqModel };
+    }
+    if (aiProvider === 'deepseek') {
+      return { provider: 'deepseek' as const, deepseekApiKey, deepseekModel };
+    }
+    return { provider: 'openai' as const, openAiApiKey, openAiModel };
+  };
+
+  const getActiveAiKey = () => {
+    if (aiProvider === 'groq') return groqApiKey;
+    if (aiProvider === 'deepseek') return deepseekApiKey;
+    return openAiApiKey;
+  };
+
   const handleQuickAdd = async (
     keyName: string,
     sourceValue: string,
@@ -334,7 +357,7 @@ const App: React.FC = () => {
     }
 
     const targets = activeLanguages.filter(lang => lang.code !== sourceLangCode);
-    if (targets.length > 0 && !openAiApiKey) {
+    if (targets.length > 0 && !getActiveAiKey()) {
       return { ok: false, error: t('errors.openAiKeyMissing') };
     }
 
@@ -351,8 +374,7 @@ const App: React.FC = () => {
     if (fixInputText && sourceValue.trim()) {
       try {
         effectiveSourceValue = await fixText(sourceValue, {
-          openAiApiKey,
-          openAiModel,
+          ...getActiveAiOptions(),
           onUsage: handleRecordTokenUsage
         });
         if (effectiveSourceValue !== sourceValue) {
@@ -377,8 +399,7 @@ const App: React.FC = () => {
           sourceName,
           trimmedKey,
           {
-            openAiApiKey,
-            openAiModel,
+            ...getActiveAiOptions(),
             targetLangCode: lang.code,
             onUsage: handleRecordTokenUsage
           }
@@ -398,7 +419,7 @@ const App: React.FC = () => {
   const handleTranslateAll = async (
     onProgress?: (done: number, total: number) => void
   ): Promise<{ ok: boolean; error?: string }> => {
-    if (!openAiApiKey) {
+    if (!getActiveAiKey()) {
       return { ok: false, error: t('errors.openAiKeyMissing') };
     }
 
@@ -419,8 +440,7 @@ const App: React.FC = () => {
           job.sourceLangName,
           job.keyName,
           {
-            openAiApiKey,
-            openAiModel,
+            ...getActiveAiOptions(),
             targetLangCode: job.targetLangCode,
             onUsage: handleRecordTokenUsage
           }
@@ -490,6 +510,11 @@ const App: React.FC = () => {
           sourceLangCode?: string;
           openaiApiKey?: string;
           openaiModel?: string;
+          aiProvider?: AiProvider;
+          groqApiKey?: string;
+          groqModel?: string;
+          deepseekApiKey?: string;
+          deepseekModel?: string;
           tokenReport?: TokenUsageReport;
           locale?: string;
           i18nFolder?: string;
@@ -509,6 +534,21 @@ const App: React.FC = () => {
         setSourceLangCode(payload.sourceLangCode || codes[0] || 'en');
         setOpenAiApiKey(payload.openaiApiKey || '');
         setOpenAiModel(payload.openaiModel || 'gpt-5-nano-2025-08-07');
+        if (payload.aiProvider === 'openai' || payload.aiProvider === 'groq' || payload.aiProvider === 'deepseek') {
+          setAiProvider(payload.aiProvider);
+        }
+        if (typeof payload.groqApiKey === 'string') {
+          setGroqApiKey(payload.groqApiKey);
+        }
+        if (typeof payload.groqModel === 'string' && payload.groqModel) {
+          setGroqModel(payload.groqModel);
+        }
+        if (typeof payload.deepseekApiKey === 'string') {
+          setDeepseekApiKey(payload.deepseekApiKey);
+        }
+        if (typeof payload.deepseekModel === 'string' && payload.deepseekModel) {
+          setDeepseekModel(payload.deepseekModel);
+        }
         setTokenReport(payload.tokenReport || EMPTY_TOKEN_REPORT);
         setLocale(payload.locale || (typeof navigator !== 'undefined' ? navigator.language : 'en'));
         setI18nFolderName(payload.i18nFolder || 'i18n');
@@ -565,6 +605,31 @@ const App: React.FC = () => {
   const handleOpenAiModelChange = (value: string) => {
     setOpenAiModel(value);
     vscodeApi?.postMessage({ type: 'updateConfig', key: 'openaiModel', value, scope: 'workspace' });
+  };
+
+  const handleAiProviderChange = (value: AiProvider) => {
+    setAiProvider(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'aiProvider', value, scope: 'global' });
+  };
+
+  const handleGroqApiKeyChange = (value: string) => {
+    setGroqApiKey(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'groqApiKey', value, scope: 'global' });
+  };
+
+  const handleGroqModelChange = (value: string) => {
+    setGroqModel(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'groqModel', value, scope: 'workspace' });
+  };
+
+  const handleDeepseekApiKeyChange = (value: string) => {
+    setDeepseekApiKey(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'deepseekApiKey', value, scope: 'global' });
+  };
+
+  const handleDeepseekModelChange = (value: string) => {
+    setDeepseekModel(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'deepseekModel', value, scope: 'workspace' });
   };
 
   const handleMcpPreferredPortChange = (port: number) => {
@@ -733,8 +798,8 @@ const App: React.FC = () => {
                   onQuickEditModeChange={setListQuickEditMode}
                   currentPage={listCurrentPage}
                   onCurrentPageChange={setListCurrentPage}
-                  openAiModel={openAiModel}
-                  hasOpenAiKey={Boolean(openAiApiKey)}
+                  openAiModel={activeModel}
+                  hasOpenAiKey={Boolean(getActiveAiKey())}
                   translateAllEstimate={translateAllEstimate}
                   onTranslateAll={handleTranslateAll}
                   onEdit={handleEdit}
@@ -754,6 +819,11 @@ const App: React.FC = () => {
                   languages={activeLanguages}
                   openAiApiKey={openAiApiKey}
                   openAiModel={openAiModel}
+                  aiProvider={aiProvider}
+                  groqApiKey={groqApiKey}
+                  groqModel={groqModel}
+                  deepseekApiKey={deepseekApiKey}
+                  deepseekModel={deepseekModel}
                   onRecordTokenUsage={handleRecordTokenUsage}
                   onSave={handleSave}
                   onChangeTarget={handleEditorTargetChange}
@@ -784,14 +854,24 @@ const App: React.FC = () => {
                   keys={keys}
                   values={values}
                   sourceLangCode={sourceLangCode}
+                  aiProvider={aiProvider}
                   openAiApiKey={openAiApiKey}
                   openAiModel={openAiModel}
+                  groqApiKey={groqApiKey}
+                  groqModel={groqModel}
+                  deepseekApiKey={deepseekApiKey}
+                  deepseekModel={deepseekModel}
                   tokenReport={tokenReport}
                   mcpPreferredPort={mcpPreferredPort}
                   fixInputText={fixInputText}
                   onSetSourceLanguage={handleSetSourceLanguage}
+                  onUpdateAiProvider={handleAiProviderChange}
                   onUpdateOpenAiApiKey={handleOpenAiApiKeyChange}
                   onUpdateOpenAiModel={handleOpenAiModelChange}
+                  onUpdateGroqApiKey={handleGroqApiKeyChange}
+                  onUpdateGroqModel={handleGroqModelChange}
+                  onUpdateDeepseekApiKey={handleDeepseekApiKeyChange}
+                  onUpdateDeepseekModel={handleDeepseekModelChange}
                   onUpdateMcpPreferredPort={handleMcpPreferredPortChange}
                   onUpdateFixInputText={handleFixInputTextChange}
                   onAddLanguage={handleAddLanguage}
