@@ -91,6 +91,7 @@
   "editor.characters": "{{count}} characters",
   "editor.status.ok": "OK",
   "editor.status.missing": "Missing",
+  "editor.status.occurrence": "Occurrence",
   "editor.changeLanguage": "Change language to {{language}}",
   "editor.estimation.noTable": "No pricing table",
   "editor.toolbar.bold": "Bold",
