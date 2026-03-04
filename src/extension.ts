@@ -804,6 +804,60 @@ const MCP_TOOLS = [
       },
       required: ['key', 'content']
     }
+  },
+  {
+    name: 'check_key',
+    description:
+      'Check whether a translation key exists in the i18n files and retrieve its ' +
+      'current value for every configured language. ' +
+      'Returns existence status, the translations found per language, and which ' +
+      'languages are still missing a translation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          description: 'Translation key in dot notation (e.g. "home.button.save")'
+        }
+      },
+      required: ['key']
+    }
+  },
+  {
+    name: 'list_keys',
+    description:
+      'List all translation keys present in the i18n files. ' +
+      'Optionally filter keys by a dot-notation prefix.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prefix: {
+          type: 'string',
+          description:
+            'Optional dot-notation prefix to filter keys (e.g. "home" returns only keys ' +
+            'that start with "home.")'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'missing_translations',
+    description:
+      'Find translation keys that are missing a value (empty or absent) in one or more languages. ' +
+      'Optionally restrict the check to a specific language.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        lang: {
+          type: 'string',
+          description:
+            'BCP-47 language code to check (e.g. "pt-br"). ' +
+            'If omitted, all languages are checked.'
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -909,51 +963,149 @@ async function handleMcpRpc(
       const toolName = params?.name;
       const args = params?.arguments ?? {};
 
-      if (toolName !== 'quick_add') {
-        return {
-          jsonrpc: '2.0',
-          id,
-          error: { code: -32601, message: `Unknown tool: ${toolName}` }
-        };
-      }
+      if (toolName === 'quick_add') {
+        const key = typeof args.key === 'string' ? args.key.trim() : '';
+        const content = typeof args.content === 'string' ? args.content : '';
+        const sourceLangOverride =
+          typeof args.source_lang === 'string' ? args.source_lang : undefined;
 
-      const key = typeof args.key === 'string' ? args.key.trim() : '';
-      const content = typeof args.content === 'string' ? args.content : '';
-      const sourceLangOverride =
-        typeof args.source_lang === 'string' ? args.source_lang : undefined;
+        if (!key) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: 'Error: "key" argument is required.' }],
+              isError: true
+            }
+          };
+        }
 
-      if (!key) {
+        const result = await mcpQuickAdd(key, content, sourceLangOverride);
+        const summary = result.ok
+          ? `Success: key "${key}" added and translated to ${Object.keys(result.results).length} language(s).\n` +
+            Object.entries(result.results)
+              .map(([lang, val]) => `  ${lang}: ${val}`)
+              .join('\n')
+          : `Error: ${result.error}\n` +
+            (Object.keys(result.results).length > 0
+              ? 'Partial results:\n' +
+                Object.entries(result.results)
+                  .map(([lang, val]) => `  ${lang}: ${val}`)
+                  .join('\n')
+              : '');
+
         return {
           jsonrpc: '2.0',
           id,
           result: {
-            content: [{ type: 'text', text: 'Error: "key" argument is required.' }],
-            isError: true
+            content: [{ type: 'text', text: summary }],
+            isError: !result.ok
           }
         };
       }
 
-      const result = await mcpQuickAdd(key, content, sourceLangOverride);
-      const summary = result.ok
-        ? `Success: key "${key}" added and translated to ${Object.keys(result.results).length} language(s).\n` +
-          Object.entries(result.results)
-            .map(([lang, val]) => `  ${lang}: ${val}`)
-            .join('\n')
-        : `Error: ${result.error}\n` +
-          (Object.keys(result.results).length > 0
-            ? 'Partial results:\n' +
-              Object.entries(result.results)
-                .map(([lang, val]) => `  ${lang}: ${val}`)
-                .join('\n')
-            : '');
+      if (toolName === 'check_key') {
+        const key = typeof args.key === 'string' ? args.key.trim() : '';
+        if (!key) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: 'Error: "key" argument is required.' }],
+              isError: true
+            }
+          };
+        }
+        const checkResult = mcpCheckKey(key);
+        const lines: string[] = [];
+        if (!checkResult.exists) {
+          lines.push(`Key "${key}" does not exist in any language file.`);
+        } else {
+          lines.push(`Key "${key}" exists.`);
+          lines.push('');
+          lines.push('Translations:');
+          for (const [lang, val] of Object.entries(checkResult.translations)) {
+            lines.push(`  ${lang}: ${val !== '' ? val : '(empty)'}`);
+          }
+          if (checkResult.missing.length > 0) {
+            lines.push('');
+            lines.push(`Missing translations (${checkResult.missing.length}): ${checkResult.missing.join(', ')}`);
+          } else {
+            lines.push('');
+            lines.push('All languages have a translation for this key.');
+          }
+        }
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { content: [{ type: 'text', text: lines.join('\n') }] }
+        };
+      }
+
+      if (toolName === 'list_keys') {
+        const prefix = typeof args.prefix === 'string' ? args.prefix.trim() : '';
+        const listResult = mcpListKeys(prefix);
+        if (listResult.error) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: `Error: ${listResult.error}` }],
+              isError: true
+            }
+          };
+        }
+        const text =
+          listResult.keys.length === 0
+            ? prefix
+              ? `No keys found with prefix "${prefix}".`
+              : 'No translation keys found.'
+            : `Found ${listResult.keys.length} key(s)${prefix ? ` with prefix "${prefix}"` : ''}:\n` +
+              listResult.keys.map(k => `  ${k}`).join('\n');
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { content: [{ type: 'text', text: text }] }
+        };
+      }
+
+      if (toolName === 'missing_translations') {
+        const langFilter = typeof args.lang === 'string' ? args.lang.trim() : '';
+        const missingResult = mcpMissingTranslations(langFilter || undefined);
+        if (missingResult.error) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: `Error: ${missingResult.error}` }],
+              isError: true
+            }
+          };
+        }
+        const lines: string[] = [];
+        if (Object.keys(missingResult.missing).length === 0) {
+          lines.push(
+            langFilter
+              ? `No missing translations for language "${langFilter}".`
+              : 'No missing translations found.'
+          );
+        } else {
+          for (const [lang, keys] of Object.entries(missingResult.missing)) {
+            lines.push(`${lang} (${keys.length} missing):`);
+            keys.forEach(k => lines.push(`  ${k}`));
+          }
+        }
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { content: [{ type: 'text', text: lines.join('\n') }] }
+        };
+      }
 
       return {
         jsonrpc: '2.0',
         id,
-        result: {
-          content: [{ type: 'text', text: summary }],
-          isError: !result.ok
-        }
+        error: { code: -32601, message: `Unknown tool: ${toolName}` }
       };
     }
 
@@ -1116,4 +1268,106 @@ async function mcpTranslateText(
   };
   const content = data?.choices?.[0]?.message?.content;
   return typeof content === 'string' ? mcpNormalizeOutput(content) : '';
+}
+
+function mcpCheckKey(key: string): {
+  exists: boolean;
+  translations: Record<string, string>;
+  missing: string[];
+} {
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return { exists: false, translations: {}, missing: [] };
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  const translations: Record<string, string> = {};
+  const missing: string[] = [];
+  let exists = false;
+
+  for (const file of files) {
+    const lang = path.basename(file, '.json');
+    const json = readJsonFile(path.join(i18nDir, file));
+    const val = getNestedValue(json, key);
+    if (val !== undefined) {
+      exists = true;
+      translations[lang] = typeof val === 'string' ? val : JSON.stringify(val);
+      if (typeof val === 'string' && val.trim() === '') {
+        missing.push(lang);
+      }
+    } else {
+      missing.push(lang);
+    }
+  }
+
+  return { exists, translations, missing };
+}
+
+function mcpListKeys(prefix?: string): { keys: string[]; error?: string } {
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return { keys: [], error: 'i18n directory not found.' };
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  if (files.length === 0) {
+    return { keys: [] };
+  }
+
+  const allKeys = new Set<string>();
+  for (const file of files) {
+    const json = readJsonFile(path.join(i18nDir, file));
+    Object.keys(flattenObject(json)).forEach(k => allKeys.add(k));
+  }
+
+  let keys = Array.from(allKeys).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (prefix) {
+    const normalized = prefix.endsWith('.') ? prefix : `${prefix}.`;
+    keys = keys.filter(k => k === prefix || k.startsWith(normalized));
+  }
+
+  return { keys };
+}
+
+function mcpMissingTranslations(langFilter?: string): {
+  missing: Record<string, string[]>;
+  error?: string;
+} {
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return { missing: {}, error: 'i18n directory not found.' };
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  if (files.length === 0) {
+    return { missing: {} };
+  }
+
+  const langCodes = files.map(f => path.basename(f, '.json'));
+  if (langFilter && !langCodes.includes(langFilter)) {
+    return { missing: {}, error: `Language "${langFilter}" not found. Available: ${langCodes.join(', ')}` };
+  }
+
+  const allKeys = new Set<string>();
+  const perLang: Record<string, Record<string, string>> = {};
+  for (const code of langCodes) {
+    const json = readJsonFile(path.join(i18nDir, `${code}.json`));
+    perLang[code] = flattenObject(json);
+    Object.keys(perLang[code]).forEach(k => allKeys.add(k));
+  }
+
+  const targetLangs = langFilter ? [langFilter] : langCodes;
+  const missing: Record<string, string[]> = {};
+
+  for (const lang of targetLangs) {
+    const langDict = perLang[lang] ?? {};
+    const missingKeys = Array.from(allKeys).filter(
+      k => langDict[k] === undefined || langDict[k].trim() === ''
+    ).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    if (missingKeys.length > 0) {
+      missing[lang] = missingKeys;
+    }
+  }
+
+  return { missing };
 }
