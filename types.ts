@@ -40,7 +40,7 @@ export interface TranslateAllEstimate {
   cost: number | null;
 }
 
-export type ViewState = 'dashboard' | 'list' | 'editor' | 'settings' | 'mcp';
+export type ViewState = 'dashboard' | 'list' | 'editor' | 'settings' | 'mcp' | 'occurrences';
 
 export interface EditorState {
   keyId: string | null;

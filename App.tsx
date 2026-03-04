@@ -7,12 +7,13 @@ import TranslationList from './components/TranslationList';
 import TranslationEditor from './components/TranslationEditor';
 import Settings from './components/Settings';
 import McpTab from './components/McpTab';
+import OccurrencesTab from './components/OccurrencesTab';
 import { translateText } from './services/geminiService';
 import { I18nProvider, createTranslator } from './services/i18n';
 import { buildToonPrompt, estimateTokenCount } from './services/toonPrompt';
 import { estimateOpenAiCost } from './services/openAiPricing';
 import { runWithConcurrency, TRANSLATION_CONCURRENCY } from './services/concurrency';
-import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight, Bot } from 'lucide-react';
+import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight, Bot, AlertCircle } from 'lucide-react';
 
 const getVsCodeApi = () => {
   if (typeof window === 'undefined') return null;
@@ -613,6 +614,7 @@ const App: React.FC = () => {
             <nav className={`flex-1 space-y-2 ${isSidebarCollapsed ? 'p-2' : 'p-4'}`}>
               <NavItem view="dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
               <NavItem view="list" icon={Globe} label={t('nav.translations')} />
+              <NavItem view="occurrences" icon={AlertCircle} label={t('nav.occurrences')} />
               <NavItem view="settings" icon={SettingsIcon} label={t('nav.settings')} />
               <NavItem view="mcp" icon={Bot} label={t('nav.mcp')} />
             </nav>
@@ -717,6 +719,23 @@ const App: React.FC = () => {
                   onSave={handleSave}
                   onChangeTarget={handleEditorTargetChange}
                   onCancel={() => setCurrentView('list')}
+                  onDelete={(keyId) => {
+                    handleDeleteKey(keyId);
+                    setCurrentView('list');
+                  }}
+                />
+              )}
+
+              {currentView === 'occurrences' && (
+                <OccurrencesTab
+                  keys={keys}
+                  values={values}
+                  languages={activeLanguages}
+                  sourceLangCode={sourceLangCode}
+                  unusedKeys={unusedKeys}
+                  scanningUnusedKeys={scanningUnusedKeys}
+                  onScanUnusedKeys={handleScanUnusedKeys}
+                  onEdit={handleEdit}
                 />
               )}
 

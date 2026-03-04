@@ -1,7 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { TranslationKey, TranslationValue, Language } from '../types';
-import { ArrowLeft, Save, Sparkles, Layers, Bold, Italic, Link as LinkIcon, List, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Layers, Bold, Italic, Link as LinkIcon, List, AlertTriangle, Trash2 } from 'lucide-react';
+import DeleteKeyModal from './DeleteKeyModal';
 import { translateText } from '../services/geminiService';
 import { buildToonPrompt, estimateTokenCount } from '../services/toonPrompt';
 import { estimateOpenAiCost, formatUsd } from '../services/openAiPricing';
@@ -26,6 +27,7 @@ interface TranslationEditorProps {
   onSave: (keyId: string, langCode: string, value: string, options?: { stay?: boolean }) => void;
   onChangeTarget: (nextLang: string, currentValue: string) => void;
   onCancel: () => void;
+  onDelete?: (keyId: string) => void;
 }
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ 
@@ -39,7 +41,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   onRecordTokenUsage,
   onSave,
   onChangeTarget,
-  onCancel 
+  onCancel,
+  onDelete
 }) => {
   const t = useI18n();
   const sourceText = allValues[sourceLang] || '';
@@ -50,6 +53,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const [isBulkTranslating, setIsBulkTranslating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const targetLangObj = languages.find(l => l.code === targetLang);
   const sourceLangObj = languages.find(l => l.code === sourceLang);
@@ -206,6 +210,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
           </div>
         </div>
         <div className="flex gap-2">
+          {onDelete && (
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className="px-4 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" /> {t('editor.delete')}
+            </button>
+          )}
           <button 
             onClick={onCancel}
             className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
@@ -383,6 +395,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
         </div>
 
       </div>
+      {onDelete && (
+        <DeleteKeyModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={() => {
+            setDeleteModalOpen(false);
+            onDelete(keyData.id);
+          }}
+          keyName={keyData.key}
+        />
+      )}
     </div>
   );
 };
