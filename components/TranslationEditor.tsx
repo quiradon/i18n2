@@ -63,11 +63,30 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const selectableLanguages = hasTargetLang
     ? languages
     : [...languages, { code: targetLang, name: targetLang, flag: '' }];
-  const languageStatuses = selectableLanguages.map(lang => {
-    const rawValue = lang.code === targetLang ? value : (allValues[lang.code] || '');
-    const hasValue = rawValue.trim().length > 0;
-    return { ...lang, hasValue };
-  });
+  const languageStatuses = React.useMemo(() => {
+    const statuses = selectableLanguages.map(lang => {
+      const rawValue = lang.code === targetLang ? value : (allValues[lang.code] || '');
+      const hasValue = rawValue.trim().length > 0;
+      return { ...lang, hasValue, rawValue: rawValue.trim() };
+    });
+    const valueToLangs = new Map<string, string[]>();
+    for (const l of statuses) {
+      if (!l.hasValue) continue;
+      const arr = valueToLangs.get(l.rawValue) ?? [];
+      arr.push(l.code);
+      valueToLangs.set(l.rawValue, arr);
+    }
+    const duplicateCodes = new Set<string>();
+    for (const codes of valueToLangs.values()) {
+      if (codes.length > 1) codes.forEach(c => duplicateCodes.add(c));
+    }
+    return statuses.map(l => ({ ...l, hasOccurrence: duplicateCodes.has(l.code) }));
+  }, [selectableLanguages, targetLang, value, allValues]);
+  const getLangStatusKey = (lang: { hasValue: boolean; hasOccurrence: boolean }) => {
+    if (lang.hasOccurrence) return 'editor.status.occurrence';
+    if (lang.hasValue) return 'editor.status.ok';
+    return 'editor.status.missing';
+  };
   const okCount = languageStatuses.filter(lang => lang.hasValue).length;
   const missingTargets = languageStatuses.filter(
     lang => lang.code !== sourceLang && !lang.hasValue
@@ -265,11 +284,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
               <button
                 key={lang.code}
                 type="button"
-                title={lang.hasValue ? t('editor.status.ok') : t('editor.status.missing')}
+                title={t(getLangStatusKey(lang))}
                 aria-label={t('editor.changeLanguage', { language: lang.name || lang.code })}
                 onClick={() => onChangeTarget(lang.code, value)}
                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs transition-colors ${
-                  lang.hasValue
+                  lang.hasOccurrence
+                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/40'
+                    : lang.hasValue
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/40'
                     : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
                 } ${
@@ -278,11 +299,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
                     : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${lang.hasValue ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-500'}`} />
+                <span className={`h-2 w-2 rounded-full ${lang.hasOccurrence ? 'bg-amber-500' : lang.hasValue ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-500'}`} />
                 <span className="max-w-[140px] truncate">
                   {lang.flag ? `${lang.flag} ` : ''}{lang.name || lang.code}
                 </span>
-                <span className="text-[10px] uppercase tracking-wide">{lang.hasValue ? t('editor.status.ok') : t('editor.status.missing')}</span>
+                <span className="text-[10px] uppercase tracking-wide">{t(getLangStatusKey(lang))}</span>
               </button>
             );
           })}

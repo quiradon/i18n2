@@ -90,6 +90,7 @@
   "editor.characters": "{{count}} caracteres",
   "editor.status.ok": "OK",
   "editor.status.missing": "Faltando",
+  "editor.status.occurrence": "Ocorrência",
   "editor.changeLanguage": "Mudar idioma para {{language}}",
   "editor.estimation.noTable": "Sem tabela",
   "editor.toolbar.bold": "Negrito",
