@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { TranslationKey, TranslationValue, Language } from '../types';
+import type { AiProvider } from '../types';
 import { ArrowLeft, Save, Sparkles, Layers, Bold, Italic, Link as LinkIcon, List, AlertTriangle, Trash2 } from 'lucide-react';
 import DeleteKeyModal from './DeleteKeyModal';
 import { translateText } from '../services/geminiService';
@@ -17,6 +18,9 @@ interface TranslationEditorProps {
   languages: Language[];
   openAiApiKey: string;
   openAiModel: string;
+  aiProvider?: AiProvider;
+  groqApiKey?: string;
+  groqModel?: string;
   onRecordTokenUsage: (usage: {
     promptTokens: number;
     completionTokens: number;
@@ -38,6 +42,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   languages,
   openAiApiKey,
   openAiModel,
+  aiProvider = 'openai',
+  groqApiKey = '',
+  groqModel = 'llama-3.3-70b-versatile',
   onRecordTokenUsage,
   onSave,
   onChangeTarget,
@@ -45,6 +52,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   onDelete
 }) => {
   const t = useI18n();
+
+  const getActiveAiKey = () => aiProvider === 'groq' ? groqApiKey : openAiApiKey;
+  const getActiveAiOptions = () => {
+    if (aiProvider === 'groq') {
+      return { provider: 'groq' as const, groqApiKey, groqModel };
+    }
+    return { provider: 'openai' as const, openAiApiKey, openAiModel };
+  };
   const sourceText = allValues[sourceLang] || '';
   const initialValue = allValues[targetLang] || '';
   
@@ -106,7 +121,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const missingCost = estimateOpenAiCost(
     missingPromptTokens,
     missingCompletionTokens,
-    openAiModel
+    aiProvider === 'groq' ? groqModel : openAiModel
   );
   const formatNumber = (value: number) => value.toLocaleString();
   const isBusy = isTranslating || isBulkTranslating;
@@ -123,7 +138,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 
   const handleAiTranslate = async () => {
     if (!sourceText) return;
-    if (!openAiApiKey) {
+    if (!getActiveAiKey()) {
       setError(t('errors.openAiKeyMissing'));
       return;
     }
@@ -137,8 +152,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
         sourceLangObj?.name || sourceLang,
         keyData.key,
         {
-          openAiApiKey,
-          openAiModel,
+          ...getActiveAiOptions(),
           targetLangCode: targetLang,
           onUsage: onRecordTokenUsage
         }
@@ -154,7 +168,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const handleTranslateMissing = async () => {
     if (!sourceText) return;
     if (missingTargets.length === 0) return;
-    if (!openAiApiKey) {
+    if (!getActiveAiKey()) {
       setError(t('errors.openAiKeyMissing'));
       return;
     }
@@ -175,8 +189,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
             sourceLangObj?.name || sourceLang,
             keyData.key,
             {
-              openAiApiKey,
-              openAiModel,
+              ...getActiveAiOptions(),
               targetLangCode: lang.code,
               onUsage: onRecordTokenUsage
             }

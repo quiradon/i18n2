@@ -1,14 +1,22 @@
 import { buildToonSystemPrompt, buildToonUserPrompt } from './toonPrompt';
+import type { AiProvider } from '../types';
 
 const DEFAULT_OPENAI_MODEL = 'gpt-5-nano-2025-08-07';
+const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 const FIX_SYSTEM_PROMPT =
   'You are a text proofreader. Fix spelling mistakes, missing accents, and grammar errors in the text. ' +
   'Do NOT translate. Do NOT change meaning. Return ONLY the corrected text, no explanations, no quotes, no fences.';
 
 type AiOptions = {
+  provider?: AiProvider;
   openAiApiKey?: string;
   openAiModel?: string;
+  groqApiKey?: string;
+  groqModel?: string;
   targetLangCode?: string;
   onUsage?: (usage: {
     promptTokens: number;
@@ -17,6 +25,46 @@ type AiOptions = {
     model: string;
     targetLangCode: string;
   }) => void;
+};
+
+type ProviderConfig = {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+};
+
+const resolveProviderConfig = (options?: AiOptions): ProviderConfig => {
+  const provider = options?.provider ?? 'openai';
+  if (provider === 'groq') {
+    return {
+      baseUrl: GROQ_BASE_URL,
+      apiKey: options?.groqApiKey ?? '',
+      model: options?.groqModel || DEFAULT_GROQ_MODEL
+    };
+  }
+  return {
+    baseUrl: OPENAI_BASE_URL,
+    apiKey: options?.openAiApiKey ?? '',
+    model: options?.openAiModel || DEFAULT_OPENAI_MODEL
+  };
+};
+
+export const fetchAvailableModels = async (
+  provider: AiProvider,
+  apiKey: string
+): Promise<string[]> => {
+  const baseUrl = provider === 'groq' ? GROQ_BASE_URL : OPENAI_BASE_URL;
+  const response = await fetch(`${baseUrl}/models`, {
+    headers: { Authorization: `Bearer ${apiKey}` }
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Fetch models error (${provider}):`, errorBody);
+    throw new Error(`Failed to fetch models for ${provider}.`);
+  }
+  const data = await response.json();
+  const ids: string[] = (data.data as Array<{ id: string }> | undefined)?.map(m => m.id) ?? [];
+  return ids.sort();
 };
 
 const normalizeTranslationOutput = (raw: string): string => {
@@ -63,11 +111,11 @@ export const fixText = async (
   text: string,
   options?: AiOptions
 ): Promise<string> => {
-  if (!options?.openAiApiKey) {
-    throw new Error('OpenAI API key missing.');
+  const { baseUrl, apiKey, model } = resolveProviderConfig(options);
+  if (!apiKey) {
+    throw new Error('AI provider API key missing.');
   }
 
-  const model = options.openAiModel || DEFAULT_OPENAI_MODEL;
   const payload: Record<string, unknown> = {
     model,
     messages: [
@@ -80,19 +128,19 @@ export const fixText = async (
     payload.temperature = 0.1;
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${options.openAiApiKey}`
+      Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('OpenAI Fix Text Error:', errorBody);
-    throw new Error('Failed to fix text using OpenAI.');
+    console.error('Fix Text Error:', errorBody);
+    throw new Error('Failed to fix text using AI.');
   }
 
   const data = await response.json();
@@ -116,26 +164,29 @@ export const translateText = async (
   context?: string,
   options?: AiOptions
 ): Promise<string> => {
-  if (!options?.openAiApiKey) {
-    throw new Error('OpenAI API key missing.');
+  const { baseUrl, apiKey, model } = resolveProviderConfig(options);
+  if (!apiKey) {
+    throw new Error('AI provider API key missing.');
   }
 
-  return translateWithOpenAi(
+  return translateWithProvider(
     text,
     targetLang,
     sourceLang,
     context,
-    options.openAiApiKey,
-    options.openAiModel || DEFAULT_OPENAI_MODEL,
+    baseUrl,
+    apiKey,
+    model,
     options
   );
 };
 
-const translateWithOpenAi = async (
+const translateWithProvider = async (
   text: string,
   targetLang: string,
   sourceLang: string,
   context: string | undefined,
+  baseUrl: string,
   apiKeyValue: string,
   model: string,
   options?: AiOptions
@@ -155,7 +206,7 @@ const translateWithOpenAi = async (
     payload.temperature = 0.2;
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -166,8 +217,8 @@ const translateWithOpenAi = async (
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('OpenAI Translation Error:', errorBody);
-    throw new Error('Failed to translate text using OpenAI.');
+    console.error('Translation Error:', errorBody);
+    throw new Error('Failed to translate text using AI.');
   }
 
   const data = await response.json();

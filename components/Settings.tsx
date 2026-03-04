@@ -1,24 +1,51 @@
-﻿import React, { useMemo } from 'react';
-import { Info, Globe, Bot } from 'lucide-react';
+﻿import React, { useMemo, useState } from 'react';
+import { Info, Globe, Bot, RefreshCw } from 'lucide-react';
 import { Language, TokenUsageReport, TranslationKey, TranslationValue } from '../types';
+import type { AiProvider } from '../types';
 import { buildToonPrompt, estimateTokenCount } from '../services/toonPrompt';
 import { estimateOpenAiCost, formatUsd } from '../services/openAiPricing';
+import { fetchAvailableModels } from '../services/geminiService';
 import { useI18n } from '../services/i18n';
 import { APP_VERSION } from '../appVersion';
+
+const OPENAI_DEFAULT_MODELS = [
+  'gpt-5-nano-2025-08-07',
+  'gpt-5-mini-2025-08-07',
+  'gpt-4.1-nano-2025-04-14',
+  'gpt-4o-mini',
+  'gpt-4o',
+  'gpt-5-mini',
+  'gpt-4.1-mini',
+  'gpt-4.1'
+];
+
+const GROQ_DEFAULT_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'llama-3.1-70b-versatile',
+  'gemma2-9b-it',
+  'mixtral-8x7b-32768'
+];
 
 interface SettingsProps {
   allLanguages: Language[];
   keys: TranslationKey[];
   values: Record<string, TranslationValue>;
   sourceLangCode: string;
+  aiProvider: AiProvider;
   openAiApiKey: string;
   openAiModel: string;
+  groqApiKey: string;
+  groqModel: string;
   tokenReport: TokenUsageReport;
   mcpPreferredPort: number;
   fixInputText: boolean;
   onSetSourceLanguage: (code: string) => void;
+  onUpdateAiProvider: (value: AiProvider) => void;
   onUpdateOpenAiApiKey: (value: string) => void;
   onUpdateOpenAiModel: (value: string) => void;
+  onUpdateGroqApiKey: (value: string) => void;
+  onUpdateGroqModel: (value: string) => void;
   onUpdateMcpPreferredPort: (port: number) => void;
   onUpdateFixInputText: (value: boolean) => void;
   onAddLanguage: (code: string, name?: string) => void;
@@ -30,18 +57,50 @@ const Settings: React.FC<SettingsProps> = ({
   values,
   sourceLangCode,
   onSetSourceLanguage,
+  aiProvider,
   openAiApiKey,
   openAiModel,
+  groqApiKey,
+  groqModel,
   tokenReport,
   mcpPreferredPort,
   fixInputText,
+  onUpdateAiProvider,
   onUpdateOpenAiApiKey,
   onUpdateOpenAiModel,
+  onUpdateGroqApiKey,
+  onUpdateGroqModel,
   onUpdateMcpPreferredPort,
   onUpdateFixInputText,
   onAddLanguage
 }) => {
   const t = useI18n();
+  const [openAiModels, setOpenAiModels] = useState<string[]>(OPENAI_DEFAULT_MODELS);
+  const [groqModels, setGroqModels] = useState<string[]>(GROQ_DEFAULT_MODELS);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
+
+  const handleRefreshModels = async () => {
+    const activeKey = aiProvider === 'groq' ? groqApiKey : openAiApiKey;
+    if (!activeKey) {
+      setFetchModelsError(t('settings.ai.models.errorNoKey'));
+      return;
+    }
+    setFetchingModels(true);
+    setFetchModelsError(null);
+    try {
+      const models = await fetchAvailableModels(aiProvider, activeKey);
+      if (aiProvider === 'groq') {
+        setGroqModels(models.length > 0 ? models : GROQ_DEFAULT_MODELS);
+      } else {
+        setOpenAiModels(models.length > 0 ? models : OPENAI_DEFAULT_MODELS);
+      }
+    } catch {
+      setFetchModelsError(t('settings.ai.models.errorFetch'));
+    } finally {
+      setFetchingModels(false);
+    }
+  };
 
   const normalizeLanguageCode = (code: string) => {
     const lower = code.toLowerCase();
@@ -73,6 +132,8 @@ const Settings: React.FC<SettingsProps> = ({
     return Number.isNaN(parsed.getTime()) ? t('settings.tokens.never') : parsed.toLocaleString();
   };
 
+  const activeModel = aiProvider === 'groq' ? groqModel : openAiModel;
+
   const pendingEstimate = useMemo(() => {
     const sourceName = allLanguages.find(lang => lang.code === sourceLangCode)?.name || sourceLangCode;
     let promptTokens = 0;
@@ -98,7 +159,7 @@ const Settings: React.FC<SettingsProps> = ({
     });
 
     const totalTokens = promptTokens + completionTokens;
-    const cost = estimateOpenAiCost(promptTokens, completionTokens, openAiModel);
+    const cost = estimateOpenAiCost(promptTokens, completionTokens, activeModel);
 
     return {
       promptTokens,
@@ -107,7 +168,7 @@ const Settings: React.FC<SettingsProps> = ({
       missingCount,
       cost
     };
-  }, [allLanguages, keys, openAiModel, sourceLangCode, values]);
+  }, [allLanguages, keys, activeModel, sourceLangCode, values]);
 
   const modelEntries = useMemo(
     () => Object.entries(tokenReport.perModel || {}).sort((a, b) => b[1] - a[1]),
@@ -201,40 +262,134 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('settings.ai.apiKey.label')}
+              {t('settings.ai.provider.label')}
             </label>
-            <input
-              type="password"
-              value={openAiApiKey}
-              onChange={(e) => onUpdateOpenAiApiKey(e.target.value)}
-              placeholder="sk-..."
-              className="w-full max-w-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              {t('settings.ai.apiKey.help')}
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('settings.ai.model.label')}
-            </label>
-            <div className="relative max-w-sm">
-              <select
-                value={openAiModel}
-                onChange={(e) => onUpdateOpenAiModel(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="gpt-5-nano-2025-08-07">gpt-5-nano-2025-08-07</option>
-                <option value="gpt-5-mini-2025-08-07">gpt-5-mini-2025-08-07</option>
-                <option value="gpt-4.1-nano-2025-04-14">gpt-4.1-nano-2025-04-14</option>
-                <option value="gpt-4o-mini">gpt-4o-mini</option>
-                <option value="gpt-4o">gpt-4o</option>
-                <option value="gpt-5-mini">gpt-5-mini</option>
-                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
-                <option value="gpt-4.1">gpt-4.1</option>
-              </select>
+            <div className="flex gap-3">
+              {(['openai', 'groq'] as AiProvider[]).map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => onUpdateAiProvider(p)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    aiProvider === p
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {p === 'openai' ? 'OpenAI' : 'Groq'}
+                </button>
+              ))}
             </div>
           </div>
+
+          {aiProvider === 'openai' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings.ai.apiKey.label')}
+                </label>
+                <input
+                  type="password"
+                  value={openAiApiKey}
+                  onChange={(e) => onUpdateOpenAiApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full max-w-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {t('settings.ai.apiKey.help')}
+                </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('settings.ai.model.label')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRefreshModels}
+                    disabled={fetchingModels}
+                    className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 disabled:opacity-50"
+                    title={t('settings.ai.models.refresh')}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${fetchingModels ? 'animate-spin' : ''}`} />
+                    {t('settings.ai.models.refresh')}
+                  </button>
+                </div>
+                {fetchModelsError && (
+                  <p className="text-xs text-red-500 mb-2">{fetchModelsError}</p>
+                )}
+                <div className="relative max-w-sm">
+                  <select
+                    value={openAiModel}
+                    onChange={(e) => onUpdateOpenAiModel(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {openAiModels.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    {!openAiModels.includes(openAiModel) && openAiModel && (
+                      <option value={openAiModel}>{openAiModel}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {aiProvider === 'groq' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings.ai.groq.apiKey.label')}
+                </label>
+                <input
+                  type="password"
+                  value={groqApiKey}
+                  onChange={(e) => onUpdateGroqApiKey(e.target.value)}
+                  placeholder="gsk_..."
+                  className="w-full max-w-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {t('settings.ai.groq.apiKey.help')}
+                </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('settings.ai.model.label')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRefreshModels}
+                    disabled={fetchingModels}
+                    className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 disabled:opacity-50"
+                    title={t('settings.ai.models.refresh')}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${fetchingModels ? 'animate-spin' : ''}`} />
+                    {t('settings.ai.models.refresh')}
+                  </button>
+                </div>
+                {fetchModelsError && (
+                  <p className="text-xs text-red-500 mb-2">{fetchModelsError}</p>
+                )}
+                <div className="relative max-w-sm">
+                  <select
+                    value={groqModel}
+                    onChange={(e) => onUpdateGroqModel(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {groqModels.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    {!groqModels.includes(groqModel) && groqModel && (
+                      <option value={groqModel}>{groqModel}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
           <div>
             <div className="flex items-center justify-between">
               <div>
@@ -356,7 +511,7 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('settings.tokens.estimate.title')}</p>
             <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-              <span>{t('settings.tokens.estimate.model')} <span className="font-semibold text-gray-900 dark:text-white">{openAiModel}</span></span>
+              <span>{t('settings.tokens.estimate.model')} <span className="font-semibold text-gray-900 dark:text-white">{activeModel}</span></span>
               <span>{t('settings.tokens.estimate.missing')} <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(pendingEstimate.missingCount)}</span></span>
               <span>{t('settings.tokens.estimate.tokens')} <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(pendingEstimate.totalTokens)}</span> (P {formatNumber(pendingEstimate.promptTokens)} / C {formatNumber(pendingEstimate.completionTokens)})</span>
               <span>{t('settings.tokens.estimate.cost')} <span className="font-semibold text-gray-900 dark:text-white">{pendingEstimate.cost === null ? t('editor.estimation.noTable') : formatUsd(pendingEstimate.cost)}</span></span>

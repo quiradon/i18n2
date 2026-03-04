@@ -77,6 +77,25 @@
           "type": "boolean",
           "default": false,
           "description": "When enabled, the source text in Quick Add is automatically proofread (spelling, accents, grammar) by AI before being saved and translated."
+        },
+        "polyglotManager.aiProvider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "groq"
+          ],
+          "description": "AI provider to use for translations. Choose between OpenAI and Groq."
+        },
+        "polyglotManager.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API key used for AI translations via groq.com."
+        },
+        "polyglotManager.groqModel": {
+          "type": "string",
+          "default": "llama-3.3-70b-versatile",
+          "description": "Preferred Groq model for AI translations."
         }
       }
     }
