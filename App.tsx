@@ -10,6 +10,7 @@ import { translateText } from './services/geminiService';
 import { I18nProvider, createTranslator } from './services/i18n';
 import { buildToonPrompt, estimateTokenCount } from './services/toonPrompt';
 import { estimateOpenAiCost } from './services/openAiPricing';
+import { runWithConcurrency, TRANSLATION_CONCURRENCY } from './services/concurrency';
 import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const getVsCodeApi = () => {
@@ -111,23 +112,6 @@ const collectTranslateAllJobs = (
   return jobs;
 };
 
-const TRANSLATION_CONCURRENCY = 5;
-
-const runWithConcurrency = async <T,>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T) => Promise<void>
-): Promise<void> => {
-  let index = 0;
-  const worker = async () => {
-    while (index < items.length) {
-      const current = index;
-      index += 1;
-      await fn(items[current]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
-};
 
 const App: React.FC = () => {
   const vscodeApi = useMemo(() => getVsCodeApi(), []);
