@@ -143,6 +143,8 @@ const App: React.FC = () => {
   const [tokenReport, setTokenReport] = useState<TokenUsageReport>(EMPTY_TOKEN_REPORT);
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
   const [mcpPort, setMcpPort] = useState<number>(0);
+  const [unusedKeys, setUnusedKeys] = useState<string[] | null>(null);
+  const [scanningUnusedKeys, setScanningUnusedKeys] = useState(false);
 
   // Computed
   const activeLanguages = languages.filter(l => activeLangCodes.includes(l.code));
@@ -504,6 +506,11 @@ const App: React.FC = () => {
       if (message.type === 'mcpPort' && typeof message.port === 'number') {
         setMcpPort(message.port);
       }
+
+      if (message.type === 'unusedKeys' && Array.isArray(message.keys)) {
+        setUnusedKeys(message.keys as string[]);
+        setScanningUnusedKeys(false);
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -533,6 +540,11 @@ const App: React.FC = () => {
   const handleRecordTokenUsage = (usage: TokenUsageDelta) => {
     setTokenReport(prev => applyTokenUsage(prev, usage));
     vscodeApi?.postMessage({ type: 'recordTokenUsage', usage });
+  };
+
+  const handleScanUnusedKeys = () => {
+    setScanningUnusedKeys(true);
+    vscodeApi?.postMessage({ type: 'scanUnusedKeys' });
   };
 
   const statusText = useMemo(() => {
@@ -654,6 +666,9 @@ const App: React.FC = () => {
                   languages={activeLanguages} 
                   sourceLangCode={sourceLangCode}
                   onNavigateToList={() => setCurrentView('list')}
+                  unusedKeys={unusedKeys}
+                  scanningUnusedKeys={scanningUnusedKeys}
+                  onScanUnusedKeys={handleScanUnusedKeys}
                 />
               )}
 
