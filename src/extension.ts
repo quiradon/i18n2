@@ -1669,6 +1669,26 @@ function getKeyNumericBasePrefix(key: string): string {
 }
 
 /**
+ * Returns true if `key` could be constructed via a non-numeric template-literal
+ * expression found in `content`.  For each leading prefix of the key it checks
+ * whether the source contains that prefix immediately followed by `.\${`, which
+ * is the signature of a template segment like `pricing.tiers.${tier.id}.description`.
+ * Example: key="pricing.tiers.starter.description",
+ *          content has `pricing.tiers.${tier.id}.description` → true
+ */
+function isKeyMatchedByTemplateLiteral(content: string, key: string): boolean {
+  const segments = key.split('.');
+  let prefix = segments[0];
+  for (let i = 1; i < segments.length; i++) {
+    if (content.includes(`\`${prefix}.\${`)) {
+      return true;
+    }
+    prefix += '.' + segments[i];
+  }
+  return false;
+}
+
+/**
  * Recursively collect all source files under `dir` whose extension is in
  * `extSet`, skipping directories listed in SCAN_EXCLUDE_DIRS.
  */
@@ -1782,7 +1802,14 @@ function findUnusedKeys(scanDir?: string, extensions?: string[]): string[] {
           )
         ) {
           unusedKeys.delete(key);
+          continue;
         }
+      }
+      // Dynamic usage via non-numeric template-literal segments, e.g.:
+      //   `pricing.tiers.${tier.id}.description`
+      // covers keys like "pricing.tiers.starter.description".
+      if (isKeyMatchedByTemplateLiteral(content, key)) {
+        unusedKeys.delete(key);
       }
     }
   }
