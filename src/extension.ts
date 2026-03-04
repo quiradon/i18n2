@@ -1649,6 +1649,26 @@ const DEFAULT_SCAN_EXTENSIONS = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'vue', 
 const SCAN_EXCLUDE_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.next', 'out', 'coverage']);
 
 /**
+ * Returns true if any dot-separated segment of `key` is a pure integer.
+ * Example: "pages.home.items.4.title" → true
+ *          "pages.home.title"         → false
+ */
+function keyHasNumericSegment(key: string): boolean {
+  return key.split('.').some(seg => /^\d+$/.test(seg));
+}
+
+/**
+ * Returns the portion of `key` before its first numeric segment, or an
+ * empty string if the very first segment is numeric.
+ * Example: "pages.home.items.4.title" → "pages.home.items"
+ */
+function getKeyNumericBasePrefix(key: string): string {
+  const segments = key.split('.');
+  const idx = segments.findIndex(seg => /^\d+$/.test(seg));
+  return idx > 0 ? segments.slice(0, idx).join('.') : '';
+}
+
+/**
  * Recursively collect all source files under `dir` whose extension is in
  * `extSet`, skipping directories listed in SCAN_EXCLUDE_DIRS.
  */
@@ -1677,6 +1697,12 @@ function collectSourceFiles(dir: string, extSet: Set<string>): string[] {
 
 /**
  * Find all i18n keys that are not referenced in any source file.
+ *
+ * Keys that contain a numeric segment (e.g. "pages.home.items.4.title") are
+ * treated as potentially dynamic: if the prefix before the first number
+ * (e.g. "pages.home.items") appears anywhere in a source file, the key is
+ * NOT reported as unused.  This handles patterns like:
+ *   items.map((_, i) => t(`pages.home.items.${i}.title`))
  *
  * Used both by the MCP tool and the webview `scanUnusedKeys` handler.
  *
@@ -1728,14 +1754,35 @@ function findUnusedKeys(scanDir?: string, extensions?: string[]): string[] {
       continue;
     }
     for (const key of Array.from(unusedKeys)) {
-      // Match the key wrapped in single quotes, double quotes, or backticks so
-      // that e.g. the key "user" does not falsely match the word "username".
+      // Exact match: the key wrapped in single quotes, double quotes, or backticks
+      // so that e.g. the key "user" does not falsely match the word "username".
       if (
         content.includes(`'${key}'`) ||
         content.includes(`"${key}"`) ||
         content.includes(`\`${key}\``)
       ) {
         unusedKeys.delete(key);
+        continue;
+      }
+      // Dynamic usage: if the key contains a numeric segment (e.g. "items.4.title"),
+      // the key is likely constructed at runtime (e.g. `items.${i}.title`).
+      // Consider it used when the base prefix before the first number appears in
+      // the source as a quoted string or as a template-literal prefix.
+      if (keyHasNumericSegment(key)) {
+        const base = getKeyNumericBasePrefix(key);
+        if (
+          base &&
+          (
+            content.includes(`'${base}'`) ||
+            content.includes(`"${base}"`) ||
+            content.includes(`\`${base}\``) ||
+            content.includes(`'${base}.'`) ||
+            content.includes(`"${base}."`) ||
+            content.includes(`\`${base}.`)
+          )
+        ) {
+          unusedKeys.delete(key);
+        }
       }
     }
   }
