@@ -783,7 +783,10 @@ const MCP_TOOLS = [
       'Add a new i18n translation key. Provide the key name and source text; ' +
       'the server writes the value for the source language and auto-translates ' +
       'every other configured language using OpenAI. ' +
-      'Uses the Kraken i18n VS Code extension settings (API key, model, i18n folder).',
+      'Uses the Kraken i18n VS Code extension settings (API key, model, i18n folder). ' +
+      'Before adding, the server checks whether the exact same content already exists ' +
+      'under a different key and rejects the operation to avoid duplicates, unless ' +
+      '"force" is set to true.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -800,6 +803,12 @@ const MCP_TOOLS = [
           description:
             'BCP-47 language code of the source text (e.g. "en", "pt-br"). ' +
             "Defaults to the extension's configured source language."
+        },
+        force: {
+          type: 'boolean',
+          description:
+            'Set to true to bypass the duplicate-content guard and add the key even ' +
+            'when identical content already exists under another key.'
         }
       },
       required: ['key', 'content']
@@ -854,6 +863,34 @@ const MCP_TOOLS = [
           description:
             'BCP-47 language code to check (e.g. "pt-br"). ' +
             'If omitted, all languages are checked.'
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'find_duplicates',
+    description:
+      'Scan the i18n source-language file for keys whose content is identical or very similar, ' +
+      'helping to keep translation files lean by identifying redundant entries that could be ' +
+      'consolidated into a single reusable key. ' +
+      'Returns groups of keys that share the same (or similar) content.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        lang: {
+          type: 'string',
+          description:
+            'Language file to scan (e.g. "en", "pt-br"). ' +
+            "Defaults to the extension's configured source language."
+        },
+        threshold: {
+          type: 'number',
+          description:
+            'Similarity threshold between 0 and 1 (default: 1.0). ' +
+            '1.0 reports only exact duplicates. ' +
+            'Lower values (e.g. 0.8) also catch near-identical strings such as ' +
+            'texts that differ only by punctuation or capitalisation.'
         }
       },
       required: []
@@ -968,6 +1005,7 @@ async function handleMcpRpc(
         const content = typeof args.content === 'string' ? args.content : '';
         const sourceLangOverride =
           typeof args.source_lang === 'string' ? args.source_lang : undefined;
+        const force = args.force === true;
 
         if (!key) {
           return {
@@ -980,26 +1018,35 @@ async function handleMcpRpc(
           };
         }
 
-        const result = await mcpQuickAdd(key, content, sourceLangOverride);
-        const summary = result.ok
-          ? `Success: key "${key}" added and translated to ${Object.keys(result.results).length} language(s).\n` +
-            Object.entries(result.results)
-              .map(([lang, val]) => `  ${lang}: ${val}`)
-              .join('\n')
-          : `Error: ${result.error}\n` +
-            (Object.keys(result.results).length > 0
-              ? 'Partial results:\n' +
-                Object.entries(result.results)
-                  .map(([lang, val]) => `  ${lang}: ${val}`)
-                  .join('\n')
-              : '');
+        const result = await mcpQuickAdd(key, content, sourceLangOverride, force);
+        let summary: string;
+        if (result.duplicateOf) {
+          summary =
+            `Duplicate content detected: the text you are trying to add already exists ` +
+            `under key "${result.duplicateOf}". ` +
+            `Consider reusing that key instead of creating "${key}". ` +
+            `Pass "force": true to add it anyway.`;
+        } else {
+          summary = result.ok
+            ? `Success: key "${key}" added and translated to ${Object.keys(result.results).length} language(s).\n` +
+              Object.entries(result.results)
+                .map(([lang, val]) => `  ${lang}: ${val}`)
+                .join('\n')
+            : `Error: ${result.error}\n` +
+              (Object.keys(result.results).length > 0
+                ? 'Partial results:\n' +
+                  Object.entries(result.results)
+                    .map(([lang, val]) => `  ${lang}: ${val}`)
+                    .join('\n')
+                : '');
+        }
 
         return {
           jsonrpc: '2.0',
           id,
           result: {
             content: [{ type: 'text', text: summary }],
-            isError: !result.ok
+            isError: !result.ok || !!result.duplicateOf
           }
         };
       }
@@ -1102,6 +1149,42 @@ async function handleMcpRpc(
         };
       }
 
+      if (toolName === 'find_duplicates') {
+        const langOverride = typeof args.lang === 'string' ? args.lang.trim() : undefined;
+        const rawThreshold = typeof args.threshold === 'number' ? args.threshold : 1.0;
+        const threshold = Math.min(1.0, Math.max(0.0, rawThreshold));
+        const dupResult = mcpFindDuplicates(langOverride, threshold);
+        if (dupResult.error) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              content: [{ type: 'text', text: `Error: ${dupResult.error}` }],
+              isError: true
+            }
+          };
+        }
+        const lines: string[] = [];
+        const duplicateTypeLabel = threshold < 1.0 ? `similar (threshold ≥ ${threshold})` : 'exact duplicate';
+        if (dupResult.groups.length === 0) {
+          lines.push(`No ${duplicateTypeLabel} content found in "${dupResult.lang}".`);
+        } else {
+          lines.push(
+            `Found ${dupResult.groups.length} group(s) of ${duplicateTypeLabel} content in "${dupResult.lang}":`
+          );
+          dupResult.groups.forEach((group, i) => {
+            lines.push('');
+            lines.push(`Group ${i + 1} – "${group.content}":`);
+            group.keys.forEach(k => lines.push(`  ${k}`));
+          });
+        }
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { content: [{ type: 'text', text: lines.join('\n') }] }
+        };
+      }
+
       return {
         jsonrpc: '2.0',
         id,
@@ -1121,8 +1204,9 @@ async function handleMcpRpc(
 async function mcpQuickAdd(
   key: string,
   content: string,
-  sourceLangOverride?: string
-): Promise<{ ok: boolean; results: Record<string, string>; error?: string }> {
+  sourceLangOverride?: string,
+  force = false
+): Promise<{ ok: boolean; results: Record<string, string>; error?: string; duplicateOf?: string }> {
   const i18nDir = resolveI18nDir();
   const openaiApiKey = getOpenAiApiKey();
   const openaiModel = getOpenAiModel();
@@ -1155,6 +1239,18 @@ async function mcpQuickAdd(
   const sourceJson = readJsonFile(sourceFilePath);
   if (getNestedValue(sourceJson, key) !== undefined) {
     return { ok: false, results: {}, error: `Key "${key}" already exists.` };
+  }
+
+  // Guard against duplicate content (exact match) unless force is set
+  if (!force && content.trim() !== '') {
+    const existingKeys = flattenObject(sourceJson);
+    const normalizedContent = content.trim().toLowerCase();
+    const existingDuplicate = Object.entries(existingKeys).find(
+      ([, v]) => v.trim().toLowerCase() === normalizedContent
+    );
+    if (existingDuplicate) {
+      return { ok: false, results: {}, duplicateOf: existingDuplicate[0] };
+    }
   }
 
   // Write source language
@@ -1370,4 +1466,105 @@ function mcpMissingTranslations(langFilter?: string): {
   }
 
   return { missing };
+}
+
+// ---------------------------------------------------------------------------
+// Similarity helpers (no external dependencies)
+// ---------------------------------------------------------------------------
+
+/** Returns the Levenshtein edit distance between strings `a` and `b` –
+ *  i.e. the minimum number of single-character insertions, deletions or
+ *  substitutions needed to transform one string into the other. */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const row: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = row[j];
+      row[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, row[j], row[j - 1]);
+      prev = temp;
+    }
+  }
+  return row[n];
+}
+
+/** Returns a similarity score in [0, 1] between two strings, where 1.0 means
+ *  the strings are identical (case-insensitive, after trimming) and lower values
+ *  indicate more edits are needed.  To keep comparisons O(1) in memory and time
+ *  for very long strings, both inputs are capped at 300 characters before the
+ *  Levenshtein distance is computed. */
+function contentSimilarity(a: string, b: string): number {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  if (na === nb) return 1.0;
+  const maxLen = Math.max(na.length, nb.length);
+  if (maxLen === 0) return 1.0;
+  // Cap comparison length to keep it O(1) for very long strings
+  const ca = na.slice(0, 300);
+  const cb = nb.slice(0, 300);
+  const capMax = Math.max(ca.length, cb.length);
+  return 1 - levenshtein(ca, cb) / capMax;
+}
+
+/** Scans `lang` (defaults to the configured source language) for translation keys
+ *  whose content is identical or very similar and returns them grouped together.
+ *
+ *  @param langOverride  Language file to scan (e.g. "en", "pt-br").
+ *  @param threshold     Similarity threshold in [0, 1].  1.0 (default) reports only
+ *                       exact duplicates; lower values also surface near-identical
+ *                       strings (e.g. 0.8 catches texts differing only in punctuation).
+ *
+ *  Uses greedy clustering: each translation value is compared against the
+ *  representative of every existing group; if the similarity is ≥ threshold the
+ *  key is added to that group, otherwise a new group is started.  Groups with only
+ *  one member are excluded from the result. */
+function mcpFindDuplicates(
+  langOverride?: string,
+  threshold = 1.0
+): { lang: string; groups: Array<{ content: string; keys: string[] }>; error?: string } {
+  const i18nDir = resolveI18nDir();
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return { lang: langOverride ?? '', groups: [], error: 'i18n directory not found.' };
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  const langCodes = files.map(f => path.basename(f, '.json'));
+
+  const effectiveLang = langOverride ?? getSourceLanguagePreference();
+  if (!langCodes.includes(effectiveLang)) {
+    return {
+      lang: effectiveLang,
+      groups: [],
+      error: `Language "${effectiveLang}" not found. Available: ${langCodes.join(', ')}`
+    };
+  }
+
+  const json = readJsonFile(path.join(i18nDir, `${effectiveLang}.json`));
+  const flat = flattenObject(json);
+  const entries = Object.entries(flat).filter(([, v]) => v.trim() !== '');
+
+  // Greedy clustering: assign each entry to the first group whose representative
+  // has similarity >= threshold, otherwise start a new group.
+  const groups: Array<{ content: string; keys: string[] }> = [];
+  for (const [key, value] of entries) {
+    let assigned = false;
+    for (const group of groups) {
+      if (contentSimilarity(group.content, value) >= threshold) {
+        group.keys.push(key);
+        assigned = true;
+        break;
+      }
+    }
+    if (!assigned) {
+      groups.push({ content: value, keys: [key] });
+    }
+  }
+
+  const duplicateGroups = groups.filter(g => g.keys.length > 1);
+  return { lang: effectiveLang, groups: duplicateGroups };
 }
