@@ -65,6 +65,13 @@
             "gpt-5-nano-2025-08-07"
           ],
           "description": "Preferred OpenAI model for AI translations."
+        },
+        "polyglotManager.mcpPort": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "Port for the MCP server. Use 0 to auto-select an available port. Requires a VS Code reload to apply."
         }
       }
     }
