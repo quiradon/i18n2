@@ -3,9 +3,11 @@ import type { AiProvider } from '../types';
 
 const DEFAULT_OPENAI_MODEL = 'gpt-5-nano-2025-08-07';
 const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_DEEPSEEK_MODEL = 'deepseek-chat';
 
 const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 
 const FIX_SYSTEM_PROMPT =
   'You are a text proofreader. Fix spelling mistakes, missing accents, and grammar errors in the text. ' +
@@ -17,6 +19,8 @@ type AiOptions = {
   openAiModel?: string;
   groqApiKey?: string;
   groqModel?: string;
+  deepseekApiKey?: string;
+  deepseekModel?: string;
   targetLangCode?: string;
   onUsage?: (usage: {
     promptTokens: number;
@@ -42,6 +46,13 @@ const resolveProviderConfig = (options?: AiOptions): ProviderConfig => {
       model: options?.groqModel || DEFAULT_GROQ_MODEL
     };
   }
+  if (provider === 'deepseek') {
+    return {
+      baseUrl: DEEPSEEK_BASE_URL,
+      apiKey: options?.deepseekApiKey ?? '',
+      model: options?.deepseekModel || DEFAULT_DEEPSEEK_MODEL
+    };
+  }
   return {
     baseUrl: OPENAI_BASE_URL,
     apiKey: options?.openAiApiKey ?? '',
@@ -53,7 +64,14 @@ export const fetchAvailableModels = async (
   provider: AiProvider,
   apiKey: string
 ): Promise<string[]> => {
-  const baseUrl = provider === 'groq' ? GROQ_BASE_URL : OPENAI_BASE_URL;
+  let baseUrl: string;
+  if (provider === 'groq') {
+    baseUrl = GROQ_BASE_URL;
+  } else if (provider === 'deepseek') {
+    baseUrl = DEEPSEEK_BASE_URL;
+  } else {
+    baseUrl = OPENAI_BASE_URL;
+  }
   const response = await fetch(`${baseUrl}/models`, {
     headers: { Authorization: `Bearer ${apiKey}` }
   });

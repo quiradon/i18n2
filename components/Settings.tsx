@@ -19,6 +19,17 @@ const OPENAI_DEFAULT_MODELS = [
   'gpt-4.1'
 ];
 
+const PROVIDER_LABELS: Record<AiProvider, string> = {
+  openai: 'OpenAI',
+  groq: 'Groq',
+  deepseek: 'DeepSeek'
+};
+
+const DEEPSEEK_DEFAULT_MODELS = [
+  'deepseek-chat',
+  'deepseek-reasoner'
+];
+
 const GROQ_DEFAULT_MODELS = [
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
@@ -37,6 +48,8 @@ interface SettingsProps {
   openAiModel: string;
   groqApiKey: string;
   groqModel: string;
+  deepseekApiKey: string;
+  deepseekModel: string;
   tokenReport: TokenUsageReport;
   mcpPreferredPort: number;
   fixInputText: boolean;
@@ -46,6 +59,8 @@ interface SettingsProps {
   onUpdateOpenAiModel: (value: string) => void;
   onUpdateGroqApiKey: (value: string) => void;
   onUpdateGroqModel: (value: string) => void;
+  onUpdateDeepseekApiKey: (value: string) => void;
+  onUpdateDeepseekModel: (value: string) => void;
   onUpdateMcpPreferredPort: (port: number) => void;
   onUpdateFixInputText: (value: boolean) => void;
   onAddLanguage: (code: string, name?: string) => void;
@@ -62,6 +77,8 @@ const Settings: React.FC<SettingsProps> = ({
   openAiModel,
   groqApiKey,
   groqModel,
+  deepseekApiKey,
+  deepseekModel,
   tokenReport,
   mcpPreferredPort,
   fixInputText,
@@ -70,6 +87,8 @@ const Settings: React.FC<SettingsProps> = ({
   onUpdateOpenAiModel,
   onUpdateGroqApiKey,
   onUpdateGroqModel,
+  onUpdateDeepseekApiKey,
+  onUpdateDeepseekModel,
   onUpdateMcpPreferredPort,
   onUpdateFixInputText,
   onAddLanguage
@@ -77,11 +96,12 @@ const Settings: React.FC<SettingsProps> = ({
   const t = useI18n();
   const [openAiModels, setOpenAiModels] = useState<string[]>(OPENAI_DEFAULT_MODELS);
   const [groqModels, setGroqModels] = useState<string[]>(GROQ_DEFAULT_MODELS);
+  const [deepseekModels, setDeepseekModels] = useState<string[]>(DEEPSEEK_DEFAULT_MODELS);
   const [fetchingModels, setFetchingModels] = useState(false);
   const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
 
   const handleRefreshModels = async () => {
-    const activeKey = aiProvider === 'groq' ? groqApiKey : openAiApiKey;
+    const activeKey = aiProvider === 'groq' ? groqApiKey : aiProvider === 'deepseek' ? deepseekApiKey : openAiApiKey;
     if (!activeKey) {
       setFetchModelsError(t('settings.ai.models.errorNoKey'));
       return;
@@ -92,6 +112,8 @@ const Settings: React.FC<SettingsProps> = ({
       const models = await fetchAvailableModels(aiProvider, activeKey);
       if (aiProvider === 'groq') {
         setGroqModels(models.length > 0 ? models : GROQ_DEFAULT_MODELS);
+      } else if (aiProvider === 'deepseek') {
+        setDeepseekModels(models.length > 0 ? models : DEEPSEEK_DEFAULT_MODELS);
       } else {
         setOpenAiModels(models.length > 0 ? models : OPENAI_DEFAULT_MODELS);
       }
@@ -132,7 +154,7 @@ const Settings: React.FC<SettingsProps> = ({
     return Number.isNaN(parsed.getTime()) ? t('settings.tokens.never') : parsed.toLocaleString();
   };
 
-  const activeModel = aiProvider === 'groq' ? groqModel : openAiModel;
+  const activeModel = aiProvider === 'groq' ? groqModel : aiProvider === 'deepseek' ? deepseekModel : openAiModel;
 
   const pendingEstimate = useMemo(() => {
     const sourceName = allLanguages.find(lang => lang.code === sourceLangCode)?.name || sourceLangCode;
@@ -264,8 +286,8 @@ const Settings: React.FC<SettingsProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('settings.ai.provider.label')}
             </label>
-            <div className="flex gap-3">
-              {(['openai', 'groq'] as AiProvider[]).map(p => (
+            <div className="flex gap-3 flex-wrap">
+              {(['openai', 'groq', 'deepseek'] as AiProvider[]).map(p => (
                 <button
                   key={p}
                   type="button"
@@ -276,7 +298,7 @@ const Settings: React.FC<SettingsProps> = ({
                       : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
-                  {p === 'openai' ? 'OpenAI' : 'Groq'}
+                  {PROVIDER_LABELS[p]}
                 </button>
               ))}
             </div>
@@ -383,6 +405,60 @@ const Settings: React.FC<SettingsProps> = ({
                     ))}
                     {!groqModels.includes(groqModel) && groqModel && (
                       <option value={groqModel}>{groqModel}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {aiProvider === 'deepseek' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings.ai.deepseek.apiKey.label')}
+                </label>
+                <input
+                  type="password"
+                  value={deepseekApiKey}
+                  onChange={(e) => onUpdateDeepseekApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full max-w-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {t('settings.ai.deepseek.apiKey.help')}
+                </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('settings.ai.model.label')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRefreshModels}
+                    disabled={fetchingModels}
+                    className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 disabled:opacity-50"
+                    title={t('settings.ai.models.refresh')}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${fetchingModels ? 'animate-spin' : ''}`} />
+                    {t('settings.ai.models.refresh')}
+                  </button>
+                </div>
+                {fetchModelsError && (
+                  <p className="text-xs text-red-500 mb-2">{fetchModelsError}</p>
+                )}
+                <div className="relative max-w-sm">
+                  <select
+                    value={deepseekModel}
+                    onChange={(e) => onUpdateDeepseekModel(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {deepseekModels.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    {!deepseekModels.includes(deepseekModel) && deepseekModel && (
+                      <option value={deepseekModel}>{deepseekModel}</option>
                     )}
                   </select>
                 </div>

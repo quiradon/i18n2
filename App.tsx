@@ -145,6 +145,8 @@ const App: React.FC = () => {
   const [aiProvider, setAiProvider] = useState<AiProvider>('openai');
   const [groqApiKey, setGroqApiKey] = useState<string>('');
   const [groqModel, setGroqModel] = useState<string>('llama-3.3-70b-versatile');
+  const [deepseekApiKey, setDeepseekApiKey] = useState<string>('');
+  const [deepseekModel, setDeepseekModel] = useState<string>('deepseek-chat');
   const [tokenReport, setTokenReport] = useState<TokenUsageReport>(EMPTY_TOKEN_REPORT);
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
   const [mcpPort, setMcpPort] = useState<number>(0);
@@ -155,7 +157,7 @@ const App: React.FC = () => {
 
   // Computed
   const activeLanguages = languages.filter(l => activeLangCodes.includes(l.code));
-  const activeModel = aiProvider === 'groq' ? groqModel : openAiModel;
+  const activeModel = aiProvider === 'groq' ? groqModel : aiProvider === 'deepseek' ? deepseekModel : openAiModel;
   const translateAllEstimate = useMemo<TranslateAllEstimate>(() => {
     const jobs = collectTranslateAllJobs(keys, values, activeLanguages, sourceLangCode);
     if (jobs.length === 0) {
@@ -332,10 +334,17 @@ const App: React.FC = () => {
     if (aiProvider === 'groq') {
       return { provider: 'groq' as const, groqApiKey, groqModel };
     }
+    if (aiProvider === 'deepseek') {
+      return { provider: 'deepseek' as const, deepseekApiKey, deepseekModel };
+    }
     return { provider: 'openai' as const, openAiApiKey, openAiModel };
   };
 
-  const getActiveAiKey = () => aiProvider === 'groq' ? groqApiKey : openAiApiKey;
+  const getActiveAiKey = () => {
+    if (aiProvider === 'groq') return groqApiKey;
+    if (aiProvider === 'deepseek') return deepseekApiKey;
+    return openAiApiKey;
+  };
 
   const handleQuickAdd = async (
     keyName: string,
@@ -504,6 +513,8 @@ const App: React.FC = () => {
           aiProvider?: AiProvider;
           groqApiKey?: string;
           groqModel?: string;
+          deepseekApiKey?: string;
+          deepseekModel?: string;
           tokenReport?: TokenUsageReport;
           locale?: string;
           i18nFolder?: string;
@@ -523,7 +534,7 @@ const App: React.FC = () => {
         setSourceLangCode(payload.sourceLangCode || codes[0] || 'en');
         setOpenAiApiKey(payload.openaiApiKey || '');
         setOpenAiModel(payload.openaiModel || 'gpt-5-nano-2025-08-07');
-        if (payload.aiProvider === 'openai' || payload.aiProvider === 'groq') {
+        if (payload.aiProvider === 'openai' || payload.aiProvider === 'groq' || payload.aiProvider === 'deepseek') {
           setAiProvider(payload.aiProvider);
         }
         if (typeof payload.groqApiKey === 'string') {
@@ -531,6 +542,12 @@ const App: React.FC = () => {
         }
         if (typeof payload.groqModel === 'string' && payload.groqModel) {
           setGroqModel(payload.groqModel);
+        }
+        if (typeof payload.deepseekApiKey === 'string') {
+          setDeepseekApiKey(payload.deepseekApiKey);
+        }
+        if (typeof payload.deepseekModel === 'string' && payload.deepseekModel) {
+          setDeepseekModel(payload.deepseekModel);
         }
         setTokenReport(payload.tokenReport || EMPTY_TOKEN_REPORT);
         setLocale(payload.locale || (typeof navigator !== 'undefined' ? navigator.language : 'en'));
@@ -603,6 +620,16 @@ const App: React.FC = () => {
   const handleGroqModelChange = (value: string) => {
     setGroqModel(value);
     vscodeApi?.postMessage({ type: 'updateConfig', key: 'groqModel', value, scope: 'workspace' });
+  };
+
+  const handleDeepseekApiKeyChange = (value: string) => {
+    setDeepseekApiKey(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'deepseekApiKey', value, scope: 'global' });
+  };
+
+  const handleDeepseekModelChange = (value: string) => {
+    setDeepseekModel(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'deepseekModel', value, scope: 'workspace' });
   };
 
   const handleMcpPreferredPortChange = (port: number) => {
@@ -795,6 +822,8 @@ const App: React.FC = () => {
                   aiProvider={aiProvider}
                   groqApiKey={groqApiKey}
                   groqModel={groqModel}
+                  deepseekApiKey={deepseekApiKey}
+                  deepseekModel={deepseekModel}
                   onRecordTokenUsage={handleRecordTokenUsage}
                   onSave={handleSave}
                   onChangeTarget={handleEditorTargetChange}
@@ -830,6 +859,8 @@ const App: React.FC = () => {
                   openAiModel={openAiModel}
                   groqApiKey={groqApiKey}
                   groqModel={groqModel}
+                  deepseekApiKey={deepseekApiKey}
+                  deepseekModel={deepseekModel}
                   tokenReport={tokenReport}
                   mcpPreferredPort={mcpPreferredPort}
                   fixInputText={fixInputText}
@@ -839,6 +870,8 @@ const App: React.FC = () => {
                   onUpdateOpenAiModel={handleOpenAiModelChange}
                   onUpdateGroqApiKey={handleGroqApiKeyChange}
                   onUpdateGroqModel={handleGroqModelChange}
+                  onUpdateDeepseekApiKey={handleDeepseekApiKeyChange}
+                  onUpdateDeepseekModel={handleDeepseekModelChange}
                   onUpdateMcpPreferredPort={handleMcpPreferredPortChange}
                   onUpdateFixInputText={handleFixInputTextChange}
                   onAddLanguage={handleAddLanguage}

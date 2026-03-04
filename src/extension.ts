@@ -45,6 +45,8 @@ type InitPayload = {
   aiProvider: string;
   groqApiKey: string;
   groqModel: string;
+  deepseekApiKey: string;
+  deepseekModel: string;
   tokenReport: TokenUsageReport;
   locale: string;
   i18nFolder: string;
@@ -78,7 +80,7 @@ type WebviewMessage =
     }
   | {
       type: 'updateConfig';
-      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'aiProvider' | 'groqApiKey' | 'groqModel' | 'mcpPort' | 'fixInputText';
+      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'aiProvider' | 'groqApiKey' | 'groqModel' | 'deepseekApiKey' | 'deepseekModel' | 'mcpPort' | 'fixInputText';
       value: string;
       scope?: 'global' | 'workspace';
     };
@@ -259,6 +261,16 @@ function getGroqModel(): string {
   return config.get<string>('groqModel', 'llama-3.3-70b-versatile');
 }
 
+function getDeepseekApiKey(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('deepseekApiKey', '');
+}
+
+function getDeepseekModel(): string {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<string>('deepseekModel', 'deepseek-chat');
+}
+
 function getMcpPreferredPort(): number {
   const config = vscode.workspace.getConfiguration('polyglotManager');
   return config.get<number>('mcpPort', 0);
@@ -403,6 +415,8 @@ async function readI18nData(): Promise<InitPayload> {
   const aiProvider = getAiProvider();
   const groqApiKey = getGroqApiKey();
   const groqModel = getGroqModel();
+  const deepseekApiKey = getDeepseekApiKey();
+  const deepseekModel = getDeepseekModel();
   const mcpPreferredPort = getMcpPreferredPort();
   const fixInputText = getFixInputText();
   const tokenReport = getTokenReport();
@@ -420,6 +434,8 @@ async function readI18nData(): Promise<InitPayload> {
       aiProvider,
       groqApiKey,
       groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -444,6 +460,8 @@ async function readI18nData(): Promise<InitPayload> {
       aiProvider,
       groqApiKey,
       groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -469,6 +487,8 @@ async function readI18nData(): Promise<InitPayload> {
       aiProvider,
       groqApiKey,
       groqModel,
+      deepseekApiKey,
+      deepseekModel,
       tokenReport,
       locale,
       i18nFolder,
@@ -528,6 +548,8 @@ async function readI18nData(): Promise<InitPayload> {
     aiProvider,
     groqApiKey,
     groqModel,
+    deepseekApiKey,
+    deepseekModel,
     tokenReport,
     locale,
     i18nFolder,

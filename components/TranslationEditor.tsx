@@ -21,6 +21,8 @@ interface TranslationEditorProps {
   aiProvider?: AiProvider;
   groqApiKey?: string;
   groqModel?: string;
+  deepseekApiKey?: string;
+  deepseekModel?: string;
   onRecordTokenUsage: (usage: {
     promptTokens: number;
     completionTokens: number;
@@ -45,6 +47,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   aiProvider = 'openai',
   groqApiKey = '',
   groqModel = 'llama-3.3-70b-versatile',
+  deepseekApiKey = '',
+  deepseekModel = 'deepseek-chat',
   onRecordTokenUsage,
   onSave,
   onChangeTarget,
@@ -53,10 +57,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 }) => {
   const t = useI18n();
 
-  const getActiveAiKey = () => aiProvider === 'groq' ? groqApiKey : openAiApiKey;
+  const getActiveAiKey = () => {
+    if (aiProvider === 'groq') return groqApiKey;
+    if (aiProvider === 'deepseek') return deepseekApiKey;
+    return openAiApiKey;
+  };
   const getActiveAiOptions = () => {
     if (aiProvider === 'groq') {
       return { provider: 'groq' as const, groqApiKey, groqModel };
+    }
+    if (aiProvider === 'deepseek') {
+      return { provider: 'deepseek' as const, deepseekApiKey, deepseekModel };
     }
     return { provider: 'openai' as const, openAiApiKey, openAiModel };
   };
@@ -121,7 +132,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const missingCost = estimateOpenAiCost(
     missingPromptTokens,
     missingCompletionTokens,
-    aiProvider === 'groq' ? groqModel : openAiModel
+    aiProvider === 'groq' ? groqModel : aiProvider === 'deepseek' ? deepseekModel : openAiModel
   );
   const formatNumber = (value: number) => value.toLocaleString();
   const isBusy = isTranslating || isBulkTranslating;
