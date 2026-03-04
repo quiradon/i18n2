@@ -1,9 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as http from 'http';
+import * as net from 'net';
 import * as vscode from 'vscode';
 
 let extensionContext: vscode.ExtensionContext | null = null;
 let activePanel: vscode.WebviewPanel | null = null;
+let mcpHttpServer: http.Server | null = null;
+let mcpPort = 0;
 
 type LanguageInfo = {
   code: string;
@@ -41,6 +45,9 @@ type InitPayload = {
   tokenReport: TokenUsageReport;
   locale: string;
   i18nFolder: string;
+  i18nDirPath: string;
+  extensionPath: string;
+  mcpPort: number;
   status: 'ok' | 'missingWorkspace' | 'missingFolder' | 'emptyFolder';
   error?: string;
 };
@@ -74,6 +81,9 @@ const COMMAND_ID = 'polyglotManager.open';
 
 export function activate(context: vscode.ExtensionContext) {
   extensionContext = context;
+
+  mcpHttpServer = startMcpHttpServer();
+
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBarItem.text = '$(globe) Kraken i18n';
   statusBarItem.tooltip = 'Open Kraken i18n';
@@ -181,7 +191,10 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(command, statusBarItem);
 }
 
-export function deactivate() {}
+export function deactivate() {
+  mcpHttpServer?.close();
+  mcpHttpServer = null;
+}
 
 function getWorkspaceRoot(): string | null {
   const folder = vscode.workspace.workspaceFolders?.[0];
@@ -341,6 +354,7 @@ async function readI18nData(): Promise<InitPayload> {
   const openaiModel = getOpenAiModel();
   const tokenReport = getTokenReport();
   const locale = vscode.env.language;
+  const extensionPath = extensionContext?.extensionUri.fsPath ?? '';
 
   if (!root) {
     return {
@@ -353,6 +367,9 @@ async function readI18nData(): Promise<InitPayload> {
       tokenReport,
       locale,
       i18nFolder,
+      i18nDirPath: '',
+      extensionPath,
+      mcpPort,
       status: 'missingWorkspace',
       error: 'Nenhuma pasta de trabalho aberta.'
     };
@@ -369,6 +386,9 @@ async function readI18nData(): Promise<InitPayload> {
       tokenReport,
       locale,
       i18nFolder,
+      i18nDirPath: '',
+      extensionPath,
+      mcpPort,
       status: 'missingFolder',
       error: `Pasta nao encontrada: ${i18nFolder}`
     };
@@ -386,6 +406,9 @@ async function readI18nData(): Promise<InitPayload> {
       tokenReport,
       locale,
       i18nFolder,
+      i18nDirPath: i18nDir,
+      extensionPath,
+      mcpPort,
       status: 'emptyFolder',
       error: 'Nenhum arquivo JSON encontrado em i18n.'
     };
@@ -437,6 +460,9 @@ async function readI18nData(): Promise<InitPayload> {
     tokenReport,
     locale,
     i18nFolder,
+    i18nDirPath: i18nDir,
+    extensionPath,
+    mcpPort,
     status: 'ok'
   };
 }
@@ -727,4 +753,367 @@ function buildFallbackHtml(webview: vscode.Webview): string {
     <p>Webview assets not found. Build the webview with <code>npm run build:webview</code>.</p>
   </body>
 </html>`;
+}
+
+// ---------------------------------------------------------------------------
+// MCP HTTP Server (integrated – uses extension settings directly)
+// ---------------------------------------------------------------------------
+
+const MCP_LANGUAGE_NAME_MAP: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  pt: 'Portuguese',
+  'pt-br': 'Portuguese',
+  'pt-pt': 'Portuguese',
+  fr: 'French',
+  de: 'German',
+  it: 'Italian',
+  ja: 'Japanese',
+  zh: 'Chinese',
+  'zh-cn': 'Chinese',
+  'zh-tw': 'Chinese',
+  ko: 'Korean',
+  ru: 'Russian'
+};
+
+const MCP_TOOLS = [
+  {
+    name: 'quick_add',
+    description:
+      'Add a new i18n translation key. Provide the key name and source text; ' +
+      'the server writes the value for the source language and auto-translates ' +
+      'every other configured language using OpenAI. ' +
+      'Uses the Kraken i18n VS Code extension settings (API key, model, i18n folder).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          description: 'Translation key in dot notation (e.g. "home.button.save")'
+        },
+        content: {
+          type: 'string',
+          description: 'Source text for the key'
+        },
+        source_lang: {
+          type: 'string',
+          description:
+            'BCP-47 language code of the source text (e.g. "en", "pt-br"). ' +
+            "Defaults to the extension's configured source language."
+        }
+      },
+      required: ['key', 'content']
+    }
+  }
+];
+
+function startMcpHttpServer(): http.Server {
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
+
+    const url = req.url ?? '';
+    if (!url.startsWith('/mcp')) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found. Use POST /mcp' }));
+      return;
+    }
+
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let rpcReq: Record<string, unknown>;
+      try {
+        rpcReq = JSON.parse(body) as Record<string, unknown>;
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })
+        );
+        return;
+      }
+
+      handleMcpRpc(rpcReq)
+        .then(result => {
+          if (result === null) {
+            res.writeHead(202);
+            res.end();
+          } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          }
+        })
+        .catch(err => {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: (rpcReq.id as string | number | null) ?? null,
+              error: { code: -32603, message: String(err) }
+            })
+          );
+        });
+    });
+  });
+
+  server.listen(0, '127.0.0.1', () => {
+    const addr = server.address() as net.AddressInfo;
+    mcpPort = addr.port;
+    if (activePanel) {
+      activePanel.webview.postMessage({ type: 'mcpPort', port: mcpPort });
+    }
+  });
+
+  return server;
+}
+
+async function handleMcpRpc(
+  req: Record<string, unknown>
+): Promise<Record<string, unknown> | null> {
+  const id = (req.id as string | number | null) ?? null;
+  const method = req.method as string;
+
+  switch (method) {
+    case 'initialize':
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: { name: 'kraken-i18n', version: '2.0.0' },
+          capabilities: { tools: {} }
+        }
+      };
+
+    case 'notifications/initialized':
+      return null;
+
+    case 'tools/list':
+      return { jsonrpc: '2.0', id, result: { tools: MCP_TOOLS } };
+
+    case 'tools/call': {
+      const params = req.params as { name?: string; arguments?: Record<string, unknown> } | undefined;
+      const toolName = params?.name;
+      const args = params?.arguments ?? {};
+
+      if (toolName !== 'quick_add') {
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32601, message: `Unknown tool: ${toolName}` }
+        };
+      }
+
+      const key = typeof args.key === 'string' ? args.key.trim() : '';
+      const content = typeof args.content === 'string' ? args.content : '';
+      const sourceLangOverride =
+        typeof args.source_lang === 'string' ? args.source_lang : undefined;
+
+      if (!key) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: {
+            content: [{ type: 'text', text: 'Error: "key" argument is required.' }],
+            isError: true
+          }
+        };
+      }
+
+      const result = await mcpQuickAdd(key, content, sourceLangOverride);
+      const summary = result.ok
+        ? `Success: key "${key}" added and translated to ${Object.keys(result.results).length} language(s).\n` +
+          Object.entries(result.results)
+            .map(([lang, val]) => `  ${lang}: ${val}`)
+            .join('\n')
+        : `Error: ${result.error}\n` +
+          (Object.keys(result.results).length > 0
+            ? 'Partial results:\n' +
+              Object.entries(result.results)
+                .map(([lang, val]) => `  ${lang}: ${val}`)
+                .join('\n')
+            : '');
+
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          content: [{ type: 'text', text: summary }],
+          isError: !result.ok
+        }
+      };
+    }
+
+    default:
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: { code: -32601, message: `Method not found: ${method}` }
+      };
+  }
+}
+
+async function mcpQuickAdd(
+  key: string,
+  content: string,
+  sourceLangOverride?: string
+): Promise<{ ok: boolean; results: Record<string, string>; error?: string }> {
+  const i18nDir = resolveI18nDir();
+  const openaiApiKey = getOpenAiApiKey();
+  const openaiModel = getOpenAiModel();
+  const effectiveSourceLang = sourceLangOverride ?? getSourceLanguagePreference();
+
+  if (!i18nDir || !fs.existsSync(i18nDir)) {
+    return {
+      ok: false,
+      results: {},
+      error: 'i18n directory not found. Configure the i18n folder in Kraken i18n settings.'
+    };
+  }
+  if (!openaiApiKey) {
+    return {
+      ok: false,
+      results: {},
+      error: 'OpenAI API key not configured. Set it in Kraken i18n extension settings.'
+    };
+  }
+
+  const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+  if (files.length === 0) {
+    return { ok: false, results: {}, error: 'No JSON files found in the i18n directory.' };
+  }
+
+  const langCodes = files.map(f => path.basename(f, '.json'));
+
+  // Check if key already exists in source file
+  const sourceFilePath = path.join(i18nDir, `${effectiveSourceLang}.json`);
+  const sourceJson = readJsonFile(sourceFilePath);
+  if (getNestedValue(sourceJson, key) !== undefined) {
+    return { ok: false, results: {}, error: `Key "${key}" already exists.` };
+  }
+
+  // Write source language
+  await addTranslationKey(key, effectiveSourceLang, content);
+
+  const results: Record<string, string> = { [effectiveSourceLang]: content };
+  const errors: string[] = [];
+
+  const sourceLangName =
+    MCP_LANGUAGE_NAME_MAP[effectiveSourceLang.toLowerCase()] ?? effectiveSourceLang;
+  const targets = langCodes.filter(code => code !== effectiveSourceLang);
+
+  await Promise.all(
+    targets.map(async targetCode => {
+      const targetLangName = MCP_LANGUAGE_NAME_MAP[targetCode.toLowerCase()] ?? targetCode;
+      try {
+        const translated = await mcpTranslateText(
+          content,
+          targetLangName,
+          sourceLangName,
+          key,
+          openaiApiKey,
+          openaiModel
+        );
+        await updateTranslationValue(targetCode, key, translated);
+        results[targetCode] = translated;
+      } catch (e: unknown) {
+        errors.push(`${targetCode}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    })
+  );
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      results,
+      error: `Translation failed for some languages – ${errors.join('; ')}`
+    };
+  }
+  return { ok: true, results };
+}
+
+function mcpNormalizeOutput(raw: string): string {
+  let text = raw.trim();
+  if (!text) return text;
+  const unwrap = (pattern: RegExp) => {
+    const match = text.match(pattern);
+    if (!match) return false;
+    text = match[1].trim();
+    return true;
+  };
+  let changed = true;
+  let guard = 0;
+  while (changed && guard < 4) {
+    guard += 1;
+    changed = false;
+    if (unwrap(/^```(?:[a-zA-Z0-9_-]+)?\s*([\s\S]*?)\s*```$/)) { changed = true; continue; }
+    if (unwrap(/^(?:"""|''')\s*([\s\S]*?)\s*(?:"""|''')$/)) { changed = true; continue; }
+    if (unwrap(/^"([\s\S]*)"$/)) { changed = true; continue; }
+    if (unwrap(/^'([\s\S]*)'$/)) { changed = true; }
+  }
+  return text;
+}
+
+async function mcpTranslateText(
+  text: string,
+  targetLang: string,
+  sourceLang: string,
+  context: string,
+  apiKey: string,
+  model: string
+): Promise<string> {
+  const contextLine = context ? `CTX:${context}` : 'CTX:-';
+  const systemPrompt = [
+    'TOON/1',
+    `SRC:${sourceLang}`,
+    `TGT:${targetLang}`,
+    'RULES:KEEP_MD,KEEP_VARS,NO_QUOTES,NO_FENCES,NO_LABELS,NO_ECHO,NO_PREFIX',
+    'OUT:TEXT_ONLY',
+    'VARS:{{x}},{x},%{x},%s,%d,{0},${x}',
+    contextLine
+  ].join('\n');
+
+  const payload: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `"""${text}"""` }
+    ]
+  };
+  if (!model.startsWith('gpt-5')) {
+    payload.temperature = 0.2;
+  }
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenAI error ${response.status}: ${body}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = data?.choices?.[0]?.message?.content;
+  return typeof content === 'string' ? mcpNormalizeOutput(content) : '';
 }
