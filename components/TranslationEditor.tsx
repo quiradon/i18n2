@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Sparkles, Layers, Bold, Italic, Link as LinkIcon, List
 import { translateText } from '../services/geminiService';
 import { buildToonPrompt, estimateTokenCount } from '../services/toonPrompt';
 import { estimateOpenAiCost, formatUsd } from '../services/openAiPricing';
+import { runWithConcurrency, TRANSLATION_CONCURRENCY } from '../services/concurrency';
 import { useI18n } from '../services/i18n';
 
 interface TranslationEditorProps {
@@ -139,31 +140,41 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     setBulkProgress({ done: 0, total: missingTargets.length });
     setError(null);
 
+    let done = 0;
+    let firstError: string | undefined;
+
     try {
-      for (let index = 0; index < missingTargets.length; index += 1) {
-        const lang = missingTargets[index];
-        const translated = await translateText(
-          sourceText,
-          lang.name || lang.code,
-          sourceLangObj?.name || sourceLang,
-          keyData.key,
-          {
-            openAiApiKey,
-            openAiModel,
-            targetLangCode: lang.code,
-            onUsage: onRecordTokenUsage
+      await runWithConcurrency(missingTargets, TRANSLATION_CONCURRENCY, async (lang) => {
+        try {
+          const translated = await translateText(
+            sourceText,
+            lang.name || lang.code,
+            sourceLangObj?.name || sourceLang,
+            keyData.key,
+            {
+              openAiApiKey,
+              openAiModel,
+              targetLangCode: lang.code,
+              onUsage: onRecordTokenUsage
+            }
+          );
+
+          if (lang.code === targetLang) {
+            setValue(translated);
           }
-        );
 
-        if (lang.code === targetLang) {
-          setValue(translated);
+          onSave(keyData.id, lang.code, translated, { stay: true });
+        } catch {
+          if (!firstError) firstError = t('editor.error.ai');
+        } finally {
+          done += 1;
+          setBulkProgress({ done, total: missingTargets.length });
         }
+      });
 
-        onSave(keyData.id, lang.code, translated, { stay: true });
-        setBulkProgress({ done: index + 1, total: missingTargets.length });
+      if (firstError) {
+        setError(firstError);
       }
-    } catch (err) {
-      setError(t('editor.error.ai'));
     } finally {
       setIsBulkTranslating(false);
       setBulkProgress(null);
