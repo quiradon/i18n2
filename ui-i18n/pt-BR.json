@@ -203,5 +203,7 @@
   "editor": {
     "original": "Original ({{source}})",
     "preview": "Visualização"
-  }
+  },
+  "settings.ai.fixInputText.label": "Corrigir texto de entrada",
+  "settings.ai.fixInputText.help": "Quando ativado, o texto fonte no Quick Add é corrigido automaticamente (ortografia, acentos, gramática) pela IA antes de ser salvo e traduzido."
 }

@@ -72,6 +72,11 @@
           "minimum": 0,
           "maximum": 65535,
           "description": "Port for the MCP server. Use 0 to auto-select an available port. Requires a VS Code reload to apply."
+        },
+        "polyglotManager.fixInputText": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, the source text in Quick Add is automatically proofread (spelling, accents, grammar) by AI before being saved and translated."
         }
       }
     }

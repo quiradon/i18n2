@@ -227,5 +227,7 @@
     "submitting": "Hinzufügen...",
     "targets": "Ziele: {{count}} Sprache(n).",
     "title": "Schnell hinzufügen"
-  }
+  },
+  "settings.ai.fixInputText.label": "Eingabetext korrigieren",
+  "settings.ai.fixInputText.help": "Wenn aktiviert, wird der Quelltext im Quick Add vor dem Speichern und Übersetzen automatisch von der KI korrigiert (Rechtschreibung, Akzente, Grammatik)."
 }

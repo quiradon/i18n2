@@ -227,5 +227,7 @@
     "submitting": "Ajout en cours...",
     "targets": "Cibles : {{count}} langue(s).",
     "title": "Ajout rapide"
-  }
+  },
+  "settings.ai.fixInputText.label": "Corriger le texte saisi",
+  "settings.ai.fixInputText.help": "Lorsqu'il est activé, le texte source dans Quick Add est automatiquement corrigé (orthographe, accents, grammaire) par l'IA avant d'être enregistré et traduit."
 }

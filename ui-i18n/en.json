@@ -222,5 +222,7 @@
         "tokens": "Tokens:"
       }
     }
-  }
+  },
+  "settings.ai.fixInputText.label": "Fix Input Text",
+  "settings.ai.fixInputText.help": "When enabled, the source text in Quick Add is automatically proofread (spelling, accents, grammar) by AI before being saved and translated."
 }

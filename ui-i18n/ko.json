@@ -227,5 +227,7 @@
     "submitting": "추가하는 중...",
     "targets": "대상: {{count}} 언어.",
     "title": "빠른 추가"
-  }
+  },
+  "settings.ai.fixInputText.label": "입력 텍스트 수정",
+  "settings.ai.fixInputText.help": "활성화하면 Quick Add의 소스 텍스트가 저장 및 번역되기 전에 AI가 자동으로 교정(맞춤법, 악센트, 문법)합니다."
 }
