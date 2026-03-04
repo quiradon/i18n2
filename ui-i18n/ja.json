@@ -227,5 +227,7 @@
     "submitting": "追加中...",
     "targets": "ターゲット: {{count}} 言語。",
     "title": "クイック追加"
-  }
+  },
+  "settings.ai.fixInputText.label": "入力テキストを修正",
+  "settings.ai.fixInputText.help": "オンにすると、クイック追加のソーステキストが保存・翻訳される前にAIによって自動校正（スペル、アクセント、文法）されます。"
 }

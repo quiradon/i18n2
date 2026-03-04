@@ -227,5 +227,7 @@
     "submitting": "Agregando...",
     "targets": "Targets: {{count}} idioma(s).",
     "title": "Añadir Rápido"
-  }
+  },
+  "settings.ai.fixInputText.label": "Corregir texto de entrada",
+  "settings.ai.fixInputText.help": "Cuando está activado, el texto fuente en Quick Add es corregido automáticamente (ortografía, tildes, gramática) por IA antes de guardarse y traducirse."
 }

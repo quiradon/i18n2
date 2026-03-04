@@ -49,6 +49,7 @@ type InitPayload = {
   extensionPath: string;
   mcpPort: number;
   mcpPreferredPort: number;
+  fixInputText: boolean;
   status: 'ok' | 'missingWorkspace' | 'missingFolder' | 'emptyFolder';
   error?: string;
 };
@@ -74,7 +75,7 @@ type WebviewMessage =
     }
   | {
       type: 'updateConfig';
-      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'mcpPort';
+      key: 'sourceLanguage' | 'openaiApiKey' | 'openaiModel' | 'mcpPort' | 'fixInputText';
       value: string;
       scope?: 'global' | 'workspace';
     };
@@ -190,8 +191,14 @@ export function activate(context: vscode.ExtensionContext) {
             message.scope === 'workspace'
               ? vscode.ConfigurationTarget.Workspace
               : vscode.ConfigurationTarget.Global;
-          const configValue: string | number =
-            message.key === 'mcpPort' ? parseInt(message.value, 10) || 0 : message.value;
+          let configValue: string | number | boolean;
+          if (message.key === 'mcpPort') {
+            configValue = parseInt(message.value, 10) || 0;
+          } else if (message.key === 'fixInputText') {
+            configValue = message.value === 'true';
+          } else {
+            configValue = message.value;
+          }
           await config.update(message.key, configValue, target);
           break;
         }
@@ -237,6 +244,11 @@ function getOpenAiModel(): string {
 function getMcpPreferredPort(): number {
   const config = vscode.workspace.getConfiguration('polyglotManager');
   return config.get<number>('mcpPort', 0);
+}
+
+function getFixInputText(): boolean {
+  const config = vscode.workspace.getConfiguration('polyglotManager');
+  return config.get<boolean>('fixInputText', false);
 }
 
 function getDefaultTokenReport(): TokenUsageReport {
@@ -371,6 +383,7 @@ async function readI18nData(): Promise<InitPayload> {
   const openaiApiKey = getOpenAiApiKey();
   const openaiModel = getOpenAiModel();
   const mcpPreferredPort = getMcpPreferredPort();
+  const fixInputText = getFixInputText();
   const tokenReport = getTokenReport();
   const locale = vscode.env.language;
   const extensionPath = extensionContext?.extensionUri.fsPath ?? '';
@@ -390,6 +403,7 @@ async function readI18nData(): Promise<InitPayload> {
       extensionPath,
       mcpPort,
       mcpPreferredPort,
+      fixInputText,
       status: 'missingWorkspace',
       error: 'Nenhuma pasta de trabalho aberta.'
     };
@@ -410,6 +424,7 @@ async function readI18nData(): Promise<InitPayload> {
       extensionPath,
       mcpPort,
       mcpPreferredPort,
+      fixInputText,
       status: 'missingFolder',
       error: `Pasta nao encontrada: ${i18nFolder}`
     };
@@ -431,6 +446,7 @@ async function readI18nData(): Promise<InitPayload> {
       extensionPath,
       mcpPort,
       mcpPreferredPort,
+      fixInputText,
       status: 'emptyFolder',
       error: 'Nenhum arquivo JSON encontrado em i18n.'
     };
@@ -486,6 +502,7 @@ async function readI18nData(): Promise<InitPayload> {
     extensionPath,
     mcpPort,
     mcpPreferredPort,
+    fixInputText,
     status: 'ok'
   };
 }
@@ -1290,6 +1307,7 @@ async function mcpQuickAdd(
   const openaiApiKey = getOpenAiApiKey();
   const openaiModel = getOpenAiModel();
   const effectiveSourceLang = sourceLangOverride ?? getSourceLanguagePreference();
+  const fixInputText = getFixInputText();
 
   if (!i18nDir || !fs.existsSync(i18nDir)) {
     return {
@@ -1332,10 +1350,21 @@ async function mcpQuickAdd(
     }
   }
 
-  // Write source language
-  await addTranslationKey(key, effectiveSourceLang, content);
+  // Fix spelling/accents/grammar in source text before saving
+  let effectiveContent = content;
+  if (fixInputText && content.trim()) {
+    try {
+      effectiveContent = await mcpFixInputText(content, openaiApiKey, openaiModel);
+    } catch (err) {
+      console.error('[fixInputText] Failed to fix source text:', err);
+      effectiveContent = content;
+    }
+  }
 
-  const results: Record<string, string> = { [effectiveSourceLang]: content };
+  // Write source language
+  await addTranslationKey(key, effectiveSourceLang, effectiveContent);
+
+  const results: Record<string, string> = { [effectiveSourceLang]: effectiveContent };
   const errors: string[] = [];
 
   const sourceLangName =
@@ -1347,7 +1376,7 @@ async function mcpQuickAdd(
       const targetLangName = MCP_LANGUAGE_NAME_MAP[targetCode.toLowerCase()] ?? targetCode;
       try {
         const translated = await mcpTranslateText(
-          content,
+          effectiveContent,
           targetLangName,
           sourceLangName,
           key,
@@ -1377,6 +1406,43 @@ async function mcpQuickAdd(
   }
 
   return { ok: true, results };
+}
+
+const MCP_FIX_SYSTEM_PROMPT =
+  'You are a text proofreader. Fix spelling mistakes, missing accents, and grammar errors in the text. ' +
+  'Do NOT translate. Do NOT change meaning. Return ONLY the corrected text, no explanations, no quotes, no fences.';
+
+async function mcpFixInputText(text: string, apiKey: string, model: string): Promise<string> {
+  const payload: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: 'system', content: MCP_FIX_SYSTEM_PROMPT },
+      { role: 'user', content: `"""${text}"""` }
+    ]
+  };
+  if (!model.startsWith('gpt-5')) {
+    payload.temperature = 0.1;
+  }
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenAI error ${response.status}: ${body}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = data?.choices?.[0]?.message?.content;
+  return typeof content === 'string' ? mcpNormalizeOutput(content) : text;
 }
 
 function mcpNormalizeOutput(raw: string): string {

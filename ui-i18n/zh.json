@@ -227,5 +227,7 @@
     "submitting": "正在添加...",
     "targets": "目标：{{count}} 种语言。",
     "title": "快速添加"
-  }
+  },
+  "settings.ai.fixInputText.label": "修正输入文本",
+  "settings.ai.fixInputText.help": "启用后，Quick Add 中的源文本在保存和翻译之前会由 AI 自动校对（拼写、重音、语法）。"
 }

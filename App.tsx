@@ -8,7 +8,7 @@ import TranslationEditor from './components/TranslationEditor';
 import Settings from './components/Settings';
 import McpTab from './components/McpTab';
 import OccurrencesTab from './components/OccurrencesTab';
-import { translateText } from './services/geminiService';
+import { translateText, fixText } from './services/geminiService';
 import { I18nProvider, createTranslator } from './services/i18n';
 import { buildToonPrompt, estimateTokenCount } from './services/toonPrompt';
 import { estimateOpenAiCost } from './services/openAiPricing';
@@ -145,6 +145,7 @@ const App: React.FC = () => {
   const [i18nFolderName, setI18nFolderName] = useState<string>('i18n');
   const [mcpPort, setMcpPort] = useState<number>(0);
   const [mcpPreferredPort, setMcpPreferredPort] = useState<number>(0);
+  const [fixInputText, setFixInputText] = useState<boolean>(false);
   const [unusedKeys, setUnusedKeys] = useState<string[] | null>(null);
   const [scanningUnusedKeys, setScanningUnusedKeys] = useState(false);
 
@@ -345,6 +346,24 @@ const App: React.FC = () => {
       return { ok: true };
     }
 
+    // Fix spelling/accents/grammar in source text before translating
+    let effectiveSourceValue = sourceValue;
+    if (fixInputText && sourceValue.trim()) {
+      try {
+        effectiveSourceValue = await fixText(sourceValue, {
+          openAiApiKey,
+          openAiModel,
+          onUsage: handleRecordTokenUsage
+        });
+        if (effectiveSourceValue !== sourceValue) {
+          handleSave(trimmedKey, sourceLangCode, effectiveSourceValue, { stay: true });
+        }
+      } catch (err) {
+        console.error('[fixInputText] Failed to fix source text:', err);
+        effectiveSourceValue = sourceValue;
+      }
+    }
+
     const sourceName = activeLanguages.find(lang => lang.code === sourceLangCode)?.name || sourceLangCode;
     let done = 0;
     onProgress?.(done, targets.length);
@@ -353,7 +372,7 @@ const App: React.FC = () => {
     await runWithConcurrency(targets, TRANSLATION_CONCURRENCY, async (lang) => {
       try {
         const translated = await translateText(
-          sourceValue,
+          effectiveSourceValue,
           lang.name || lang.code,
           sourceName,
           trimmedKey,
@@ -476,6 +495,7 @@ const App: React.FC = () => {
           i18nFolder?: string;
           mcpPort?: number;
           mcpPreferredPort?: number;
+          fixInputText?: boolean;
           status?: string;
           error?: string;
         };
@@ -499,6 +519,9 @@ const App: React.FC = () => {
         }
         if (typeof payload.mcpPreferredPort === 'number') {
           setMcpPreferredPort(payload.mcpPreferredPort);
+        }
+        if (typeof payload.fixInputText === 'boolean') {
+          setFixInputText(payload.fixInputText);
         }
       }
 
@@ -547,6 +570,11 @@ const App: React.FC = () => {
   const handleMcpPreferredPortChange = (port: number) => {
     setMcpPreferredPort(port);
     vscodeApi?.postMessage({ type: 'updateConfig', key: 'mcpPort', value: String(port), scope: 'global' });
+  };
+
+  const handleFixInputTextChange = (value: boolean) => {
+    setFixInputText(value);
+    vscodeApi?.postMessage({ type: 'updateConfig', key: 'fixInputText', value: String(value), scope: 'workspace' });
   };
 
   const handleRecordTokenUsage = (usage: TokenUsageDelta) => {
@@ -760,10 +788,12 @@ const App: React.FC = () => {
                   openAiModel={openAiModel}
                   tokenReport={tokenReport}
                   mcpPreferredPort={mcpPreferredPort}
+                  fixInputText={fixInputText}
                   onSetSourceLanguage={handleSetSourceLanguage}
                   onUpdateOpenAiApiKey={handleOpenAiApiKeyChange}
                   onUpdateOpenAiModel={handleOpenAiModelChange}
                   onUpdateMcpPreferredPort={handleMcpPreferredPortChange}
+                  onUpdateFixInputText={handleFixInputTextChange}
                   onAddLanguage={handleAddLanguage}
                 />
               )}

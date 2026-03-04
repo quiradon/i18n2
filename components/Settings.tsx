@@ -15,10 +15,12 @@ interface SettingsProps {
   openAiModel: string;
   tokenReport: TokenUsageReport;
   mcpPreferredPort: number;
+  fixInputText: boolean;
   onSetSourceLanguage: (code: string) => void;
   onUpdateOpenAiApiKey: (value: string) => void;
   onUpdateOpenAiModel: (value: string) => void;
   onUpdateMcpPreferredPort: (port: number) => void;
+  onUpdateFixInputText: (value: boolean) => void;
   onAddLanguage: (code: string, name?: string) => void;
 }
 
@@ -32,9 +34,11 @@ const Settings: React.FC<SettingsProps> = ({
   openAiModel,
   tokenReport,
   mcpPreferredPort,
+  fixInputText,
   onUpdateOpenAiApiKey,
   onUpdateOpenAiModel,
   onUpdateMcpPreferredPort,
+  onUpdateFixInputText,
   onAddLanguage
 }) => {
   const t = useI18n();
@@ -229,6 +233,33 @@ const Settings: React.FC<SettingsProps> = ({
                 <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                 <option value="gpt-4.1">gpt-4.1</option>
               </select>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings.ai.fixInputText.label')}
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('settings.ai.fixInputText.help')}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={fixInputText}
+                onClick={() => onUpdateFixInputText(!fixInputText)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  fixInputText ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    fixInputText ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>
