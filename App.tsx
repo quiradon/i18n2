@@ -111,7 +111,23 @@ const collectTranslateAllJobs = (
   return jobs;
 };
 
-const sleep = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+const TRANSLATION_CONCURRENCY = 5;
+
+const runWithConcurrency = async <T,>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> => {
+  let index = 0;
+  const worker = async () => {
+    while (index < items.length) {
+      const current = index;
+      index += 1;
+      await fn(items[current]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+};
 
 const App: React.FC = () => {
   const vscodeApi = useMemo(() => getVsCodeApi(), []);
@@ -343,7 +359,8 @@ const App: React.FC = () => {
     let done = 0;
     onProgress?.(done, targets.length);
 
-    for (const lang of targets) {
+    let firstError: string | undefined;
+    await runWithConcurrency(targets, TRANSLATION_CONCURRENCY, async (lang) => {
       try {
         const translated = await translateText(
           sourceValue,
@@ -358,15 +375,15 @@ const App: React.FC = () => {
           }
         );
         handleSave(trimmedKey, lang.code, translated, { stay: true });
-      } catch (error) {
-        return { ok: false, error: t('errors.translationFailed') };
+      } catch {
+        if (!firstError) firstError = t('errors.translationFailed');
       } finally {
         done += 1;
         onProgress?.(done, targets.length);
       }
-    }
+    });
 
-    return { ok: true };
+    return firstError ? { ok: false, error: firstError } : { ok: true };
   };
 
   const handleTranslateAll = async (
@@ -384,8 +401,8 @@ const App: React.FC = () => {
     let done = 0;
     onProgress?.(done, jobs.length);
 
-    for (let index = 0; index < jobs.length; index += 1) {
-      const job = jobs[index];
+    let firstError: string | undefined;
+    await runWithConcurrency(jobs, TRANSLATION_CONCURRENCY, async (job) => {
       try {
         const translated = await translateText(
           job.sourceText,
@@ -401,19 +418,15 @@ const App: React.FC = () => {
         );
 
         handleSave(job.keyId, job.targetLangCode, translated, { stay: true });
-      } catch (error) {
-        return { ok: false, error: t('errors.translationFailed') };
+      } catch {
+        if (!firstError) firstError = t('errors.translationFailed');
       } finally {
         done += 1;
         onProgress?.(done, jobs.length);
       }
+    });
 
-      if (index < jobs.length - 1) {
-        await sleep(300);
-      }
-    }
-
-    return { ok: true };
+    return firstError ? { ok: false, error: firstError } : { ok: true };
   };
 
   const handleAddLanguage = (code: string, name?: string) => {

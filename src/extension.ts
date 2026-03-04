@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 let extensionContext: vscode.ExtensionContext | null = null;
+let activePanel: vscode.WebviewPanel | null = null;
 
 type LanguageInfo = {
   code: string;
@@ -80,15 +81,23 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarItem.show();
 
   const command = vscode.commands.registerCommand(COMMAND_ID, () => {
+    if (activePanel) {
+      activePanel.reveal(vscode.ViewColumn.One);
+      return;
+    }
+
     const panel = vscode.window.createWebviewPanel(
       'polyglotManager',
       'Kraken i18n',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
+        retainContextWhenHidden: true,
         localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
       }
     );
+
+    activePanel = panel;
 
     panel.webview.html = getWebviewHtml(context, panel.webview);
 
@@ -102,7 +111,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     updateTheme();
     const themeListener = vscode.window.onDidChangeActiveColorTheme(updateTheme);
-    panel.onDidDispose(() => themeListener.dispose());
+    panel.onDidDispose(() => {
+      themeListener.dispose();
+      activePanel = null;
+    });
     const configListener = vscode.workspace.onDidChangeConfiguration(async event => {
       if (!event.affectsConfiguration('polyglotManager')) return;
       const payload = await readI18nData();
