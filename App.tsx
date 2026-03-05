@@ -9,9 +9,9 @@ import TranslationEditor from './components/TranslationEditor';
 import Settings from './components/Settings';
 import McpTab from './components/McpTab';
 import OccurrencesTab from './components/OccurrencesTab';
-import { translateText, fixText } from './services/geminiService';
+import { translateText, fixText, translateBatch } from './services/geminiService';
 import { I18nProvider, createTranslator } from './services/i18n';
-import { buildToonPrompt, estimateTokenCount } from './services/toonPrompt';
+import { buildToonPrompt, buildBatchSystemPrompt, buildBatchUserPrompt, estimateTokenCount } from './services/toonPrompt';
 import { estimateOpenAiCost } from './services/openAiPricing';
 import { runWithConcurrency, TRANSLATION_CONCURRENCY } from './services/concurrency';
 import { LayoutDashboard, Globe, Settings as SettingsIcon, Menu, ChevronLeft, ChevronRight, Bot, AlertCircle } from 'lucide-react';
@@ -170,20 +170,34 @@ const App: React.FC = () => {
       };
     }
 
+    // Group jobs by keyId so the estimate reflects batched API calls
+    const jobsByKey = new Map<string, typeof jobs>();
+    for (const job of jobs) {
+      const group = jobsByKey.get(job.keyId) ?? [];
+      group.push(job);
+      jobsByKey.set(job.keyId, group);
+    }
+
     let promptTokens = 0;
     let completionTokens = 0;
-    const sourceTokenCache = new Map<string, number>();
 
-    for (const job of jobs) {
-      const prompt = buildToonPrompt(job.sourceText, job.targetLangName, job.sourceLangName, job.keyName);
-      promptTokens += estimateTokenCount(prompt);
+    for (const group of jobsByKey.values()) {
+      const first = group[0];
+      const targets = group.map(j => ({ code: j.targetLangCode, name: j.targetLangName }));
 
-      let sourceTokens = sourceTokenCache.get(job.keyId);
-      if (sourceTokens === undefined) {
-        sourceTokens = estimateTokenCount(job.sourceText);
-        sourceTokenCache.set(job.keyId, sourceTokens);
+      if (group.length === 1) {
+        // Single-language: use the individual prompt format
+        const prompt = buildToonPrompt(first.sourceText, first.targetLangName, first.sourceLangName, first.keyName);
+        promptTokens += estimateTokenCount(prompt);
+      } else {
+        // Multi-language batch: one system+user prompt shared across all langs
+        const systemPrompt = buildBatchSystemPrompt(first.sourceLangName, first.keyName);
+        const userPrompt = buildBatchUserPrompt(first.sourceText, targets);
+        promptTokens += estimateTokenCount(systemPrompt) + estimateTokenCount(userPrompt);
       }
-      completionTokens += sourceTokens;
+
+      const sourceTokens = estimateTokenCount(first.sourceText);
+      completionTokens += sourceTokens * group.length;
     }
 
     const totalTokens = promptTokens + completionTokens;
@@ -428,29 +442,43 @@ const App: React.FC = () => {
       return { ok: false, error: t('translateAll.noMissing') };
     }
 
+    // Group jobs by keyId so all languages for the same key are sent in one API call
+    const jobsByKey = new Map<string, TranslateAllJob[]>();
+    for (const job of jobs) {
+      const group = jobsByKey.get(job.keyId) ?? [];
+      group.push(job);
+      jobsByKey.set(job.keyId, group);
+    }
+    const keyGroups = Array.from(jobsByKey.values());
+
     let done = 0;
     onProgress?.(done, jobs.length);
 
     let firstError: string | undefined;
-    await runWithConcurrency(jobs, TRANSLATION_CONCURRENCY, async (job) => {
+    await runWithConcurrency(keyGroups, TRANSLATION_CONCURRENCY, async (group) => {
+      const first = group[0];
+      const targets = group.map(j => ({ code: j.targetLangCode, name: j.targetLangName }));
       try {
-        const translated = await translateText(
-          job.sourceText,
-          job.targetLangName,
-          job.sourceLangName,
-          job.keyName,
+        const results = await translateBatch(
+          first.sourceText,
+          targets,
+          first.sourceLangName,
+          first.keyName,
           {
             ...getActiveAiOptions(),
-            targetLangCode: job.targetLangCode,
             onUsage: handleRecordTokenUsage
           }
         );
-
-        handleSave(job.keyId, job.targetLangCode, translated, { stay: true });
+        for (const job of group) {
+          const translated = results.get(job.targetLangCode);
+          if (translated) {
+            handleSave(job.keyId, job.targetLangCode, translated, { stay: true });
+          }
+        }
       } catch {
         if (!firstError) firstError = t('errors.translationFailed');
       } finally {
-        done += 1;
+        done += group.length;
         onProgress?.(done, jobs.length);
       }
     });
